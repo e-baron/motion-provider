@@ -2,14 +2,12 @@
 import Chart from 'chart.js/auto';
 import * as Utils from '../../utils/chart-utils';
 
-const MAX_SAMPLES = 1000;
-
 /**
- * Start a chart diagram with no data. Call the updateChart function to add data
- * @param {String} wrapperSelector 
- * @returns 
+ * Start an acceleration chart diagram with no data. Call the updateChart function to add data
+ * @param {String} wrapperSelector
+ * @returns
  */
-const ChartAcceleration = (wrapperSelector) => {
+const AccelerationChart = (wrapperSelector, maxSamples = 1000) => {
   const chartWrapper = document.querySelector(wrapperSelector);
 
   const currentData = {
@@ -32,12 +30,8 @@ const ChartAcceleration = (wrapperSelector) => {
     options: {
       responsive: false, // true,
       height: 500,
-      /* parsing: {
-        xAxisKey: 'time',
-        yAxisKey: 'z',
-      }, */
       scales: {
-       /* y: {
+        /* y: {
           min: -1,
           max: 1,
           ticks: {
@@ -47,18 +41,14 @@ const ChartAcceleration = (wrapperSelector) => {
         x: {
           type: 'linear',
           min: 0,
-          max: MAX_SAMPLES -1,
+          max: maxSamples - 1,
           title: {
             display: true,
             text: 'Samples',
           },
           display: true,
         },
-      },
-      // indexAxis: 'x',
-      /* interaction: {
-        intersect: false,
-      }, */ 
+      }, 
       plugins: {
         legend: {
           position: 'top',
@@ -71,29 +61,31 @@ const ChartAcceleration = (wrapperSelector) => {
     },
   };
 
-  const chart = new Chart(chartWrapper, config);
-
-  return chart;
+  return new Chart(chartWrapper, config);
 };
 
-function addData(chart, data) {
+/**
+ * Rerender the given chart with the new data. This creates a streaming chart.
+ * @param {Chart} chart 
+ * @param {Object} newData 
+ */
+function updateChart(chart, newData) {
   const dataset = chart.data.datasets[0];
-  const reformatedDataForXandYaxises = { x: dataset.data.length, y: data.z };
+  const reformatedDataForXandYaxises = { x: dataset.data.length, y: newData.z };
 
-  if (dataset.data.length === MAX_SAMPLES) {
+  if (dataset.data.length === chart.options.scales.x.max + 1) {
     dataset.data.shift();
     dataset.data.push(reformatedDataForXandYaxises);
+    // update the x data for all elements
     dataset.data = dataset.data.map((element, index) => ({ x: index, y: element.y }));
+    // strangely having x updated is not enough, labels have to be also updated
     chart.data.labels = dataset.data.map((_, index) => index);
   } else {
     dataset.data.push(reformatedDataForXandYaxises);
+    // strangely adding x is not sufficient, corresponding labels have to be added
     chart.data.labels.push(dataset.data.length - 1);
   }
   chart.update();
 }
 
-function updateChart(chart, newData) {
-  addData(chart, newData);
-}
-
-export { ChartAcceleration, updateChart };
+export { AccelerationChart, updateChart };
