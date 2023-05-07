@@ -3,7 +3,7 @@ import Chart from 'chart.js/auto';
 import * as Utils from '../../utils/chart-utils';
 
 /**
- * Start an acceleration chart diagram with no data. Call the updateChart function to add data
+ * Start an acceleration chart diagram (Z axis) with no data. Call the updateChart function to add data
  * @param {String} wrapperSelector
  * @returns
  */
@@ -48,7 +48,7 @@ const AccelerationChart = (wrapperSelector, maxSamples = 1000) => {
           },
           display: true,
         },
-      }, 
+      },
       plugins: {
         legend: {
           position: 'top',
@@ -65,13 +65,76 @@ const AccelerationChart = (wrapperSelector, maxSamples = 1000) => {
 };
 
 /**
- * Rerender the given chart with the new data. This creates a streaming chart.
- * @param {Chart} chart 
- * @param {Object} newData 
+ * Start a displacement chart (Z axis) diagram with no data. Call the updateChart function to add data
+ * @param {String} wrapperSelector
+ * @returns
  */
-function updateChart(chart, newData) {
+const DisplacementChart = (wrapperSelector, maxSamples = 1000) => {
+  const chartWrapper = document.querySelector(wrapperSelector);
+
+  const currentData = {
+    datasets: [
+      {
+        label: 'Z axis displacement',
+        data: [],
+        borderColor: Utils.CHART_COLORS.blue,
+        // backgroundColor: Utils.transparentize(Utils.CHART_COLORS.red),
+        fill: false,
+        cubicInterpolationMode: 'monotone',
+        tension: 0.4,
+      },
+    ],
+  };
+
+  const config = {
+    type: 'line', // 'scatter', // 'line',
+    data: currentData,
+    options: {
+      responsive: false, // true,
+      height: 500,
+      scales: {
+        /* y: {
+          min: -1,
+          max: 1,
+          ticks: {
+            stepSize: 0.1,
+          },
+        }, */
+        x: {
+          type: 'linear',
+          min: 0,
+          max: maxSamples - 1,
+          title: {
+            display: true,
+            text: 'Samples',
+          },
+          display: true,
+        },
+      },
+      plugins: {
+        legend: {
+          position: 'top',
+        },
+        title: {
+          display: true,
+          text: 'Z axis displacement',
+        },
+      },
+    },
+  };
+
+  return new Chart(chartWrapper, config);
+};
+
+/**
+ * Rerender the given chart with the new data. This creates a streaming chart.
+ * @param {Chart} chart
+ * @param {Object} newData
+ * @param {String} yKey : this is the name of the property given in newData for the Y Axis
+ */
+function updateChart(chart, newData, yKey = 'z') {
   const dataset = chart.data.datasets[0];
-  const reformatedDataForXandYaxises = { x: dataset.data.length, y: newData.z };
+  const reformatedDataForXandYaxises = { x: dataset.data.length, y: newData[yKey] };
 
   if (dataset.data.length === chart.options.scales.x.max + 1) {
     dataset.data.shift();
@@ -88,4 +151,4 @@ function updateChart(chart, newData) {
   chart.update();
 }
 
-export { AccelerationChart, updateChart };
+export { AccelerationChart, DisplacementChart, updateChart };

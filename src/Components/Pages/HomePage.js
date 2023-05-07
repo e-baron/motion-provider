@@ -1,7 +1,8 @@
 /* eslint-disable import/no-extraneous-dependencies */
 import NoSleep from 'nosleep.js';
 // import { io } from 'socket.io-client';
-import { AccelerationChart, updateChart } from '../Chart/MotionChart';
+import { AccelerationChart, DisplacementChart, updateChart } from '../Chart/MotionChart';
+import { addSample, getLastSample } from '../../utils/samples';
 
 const noSleep = new NoSleep();
 const MAX_SAMPLES = 1000;
@@ -18,8 +19,9 @@ const HomePage = () => {
   if (!movementDetectionEnable) return;
 
   const accelerationChart = AccelerationChart('#accelerationChartWrapper', MAX_SAMPLES);
+  const displacementChart = DisplacementChart('#displacementChartWrapper', MAX_SAMPLES);
 
-  attachOnStartListenener(accelerationChart);
+  attachOnStartListenener(accelerationChart, displacementChart);
 
   /*
   const socket = io('http://localhost:3000');
@@ -48,7 +50,11 @@ function renderPageLayout() {
   <div id="printDataWrapper" class="alert alert-secondary mt-2 d-none"></div>
   <div class="mt-2">
     <canvas id="accelerationChartWrapper" height="500" width="500"></canvas>
-  </div>`;
+  </div>
+  <div class="mt-2">
+  <canvas id="displacementChartWrapper" height="500" width="500"></canvas>
+</div>`
+  ;
   main.innerHTML = pageLayout;
 }
 
@@ -75,16 +81,16 @@ async function checkNavigatorPermissionAndRenderIssues() {
   return false;
 }
 
-function attachOnStartListenener(accelerationChart) {
+function attachOnStartListenener(accelerationChart, displacementChart) {
   const startBtn = document.querySelector('#startBtn');
-  startBtn.addEventListener('click', () => startMotionDetectionAndDataRendering(accelerationChart));
+  startBtn.addEventListener('click', () => startMotionDetectionAndDataRendering(accelerationChart, displacementChart));
 }
 
-async function startMotionDetectionAndDataRendering(accelerationChart) {
+async function startMotionDetectionAndDataRendering(accelerationChart, displacementChart) {
   noSleep.enable();
   removeStartButton();
 
-  attachMotionDetectionListener(accelerationChart);
+  attachMotionDetectionListener(accelerationChart, displacementChart);
 
   /* const messageTransmittedToServer = 'Hi Websocket Server';
   socket.emit('mobile connected', messageTransmittedToServer); */
@@ -109,14 +115,14 @@ function renderPrintDataWrapper(data) {
     <p>Frequency : ${1000 / data.interval} samples / s</p>`;
 }
 
-function attachMotionDetectionListener(accelerationChart) {
+function attachMotionDetectionListener(accelerationChart, displacementChart) {
   window.addEventListener('devicemotion', (motionDataEvent) =>
-    onMotionData(accelerationChart, motionDataEvent),
+    onMotionData(accelerationChart, displacementChart, motionDataEvent),
   );
 }
 
-function onMotionData(accelerationChart, motionDataEvent) {
-  const newData = {
+function onMotionData(accelerationChart, displacementChart, motionDataEvent) {
+  const newMotionData = {
     x: motionDataEvent.acceleration.x,
     y: motionDataEvent.acceleration.y,
     z: motionDataEvent.acceleration.z,
@@ -124,9 +130,45 @@ function onMotionData(accelerationChart, motionDataEvent) {
     time: new Date().getTime(),
   };
 
-  renderPrintDataWrapper(newData);
+  renderPrintDataWrapper(newMotionData);
 
-  updateChart(accelerationChart, newData);
+  updateChart(accelerationChart, newMotionData);
+
+  const currentExtendedMotionData = calculateAndSaveNewMotionData(newMotionData);
+
+  updateChart(displacementChart, currentExtendedMotionData, 'displacement');
+}
+
+function calculateAndSaveNewMotionData(newMotionData) {
+  const currentMotionData = { ...newMotionData };
+  const previousMotionData = getLastSample();
+
+  const acceleration = currentMotionData.z;
+  const lastAcceleration = previousMotionData?.z ?? 0;
+  const lastVelocity = previousMotionData?.velocity ?? 0;
+  let velocity = lastVelocity;
+  const lastDisplacement = previousMotionData?.displacement ?? 0;
+  let displacement = lastDisplacement;
+  const timeStep = currentMotionData.interval / 1000; // from ms to s
+
+  // Calculate the change in velocity using the trapezoidal rule
+  const deltaVelocity = ((acceleration + (acceleration - lastAcceleration)) / 2) * timeStep;
+
+  // Update the velocity value
+  velocity += deltaVelocity;
+
+  // Calculate the change in displacement using the trapezoidal rule
+  const deltaDisplacement = ((velocity + (velocity - lastVelocity)) / 2) * timeStep;
+
+  // Update the displacement value and provide it in mm (instead of meters)
+  displacement += deltaDisplacement * 1000;
+
+  currentMotionData.velocity = velocity;
+  currentMotionData.displacement = displacement;
+
+  addSample(currentMotionData, MAX_SAMPLES);
+
+  return currentMotionData;
 }
 
 export default HomePage;
