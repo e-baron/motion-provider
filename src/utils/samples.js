@@ -28,4 +28,23 @@ function getLastSample() {
   return samples[samples.length - 1];
 }
 
-export { samples, addSample, getLastSample };
+function clearSamples() {
+  samples.splice(0, samples.length);
+}
+
+function downloadSamplesAsJsonFile() {
+  const jsonString = JSON.stringify(samples);
+  const blob = new Blob([jsonString], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `samples-${new Date().toLocaleString()}.json`;
+  link.click();
+}
+
+function resetSamples(newSamples) {
+  clearSamples();
+  samples.concat(newSamples);
+}
+
+export { samples, addSample, getLastSample, clearSamples, downloadSamplesAsJsonFile, resetSamples };
