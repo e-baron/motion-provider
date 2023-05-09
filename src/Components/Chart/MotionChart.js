@@ -25,7 +25,7 @@ const AccelerationChart = (wrapperSelector, maxSamples = 1000) => {
   };
 
   const config = {
-    type: 'line', // 'scatter', // 'line',
+    type: 'scatter', // 'scatter', // 'line',
     data: currentData,
     options: {
       responsive: false, // true,
@@ -130,25 +130,25 @@ const DisplacementChart = (wrapperSelector, maxSamples = 1000) => {
  * @param {Object} newData
  * @param {String} yKey : this is the name of the property given in newData for the Y Axis
  */
-function updateChart(chart, newData, yKey = 'z', maxSamples = 1000) {
+function updateChart(chart, newData, options = { yKey: 'z', maxSamples: 1000 }) {
   const dataset = chart.data.datasets[0];
 
   if (Array.isArray(newData)) {
-    dataset.data = newData.map((element, index) => ({ x: index, y: element[yKey] }));
+    dataset.data = newData.map((element, index) => ({ x: index, y: element[options.yKey] }));
     chart.data.labels = newData.map((_, index) => index);
     chart.options.scales.x.max = newData.length - 1;
     chart.update('none');
-    return ; 
+    return;
   }
 
-  chart.options.scales.x.max = maxSamples;
-  const reformatedDataForXandYaxises = { x: dataset.data.length, y: newData[yKey] };
+  chart.options.scales.x.max = options.maxSamples;
+  const reformatedDataForXandYaxises = { x: dataset.data.length, y: newData[options.yKey] };
 
-  if (dataset.data.length === maxSamples) {
+  if (dataset.data.length === options.maxSamples) {
     dataset.data.shift();
     dataset.data.push(reformatedDataForXandYaxises);
     // update the x data for all elements
-    dataset.data = dataset.data.map((element, index) => ({ x: index, y: element[yKey] }));
+    dataset.data = dataset.data.map((element, index) => ({ x: index, y: element.y}));
     // strangely having x updated is not enough, labels have to be also updated
     chart.data.labels = dataset.data.map((_, index) => index);
   } else {

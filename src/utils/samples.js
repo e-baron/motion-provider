@@ -1,3 +1,8 @@
+// eslint-disable-next-line import/no-extraneous-dependencies
+import KalmanFilter from 'kalmanjs';
+
+const kalmanFilter = new KalmanFilter({ R: 0.01, Q: 3 });
+
 const samples = [];
 
 let counter = 0;
@@ -42,9 +47,46 @@ function downloadSamplesAsJsonFile() {
   link.click();
 }
 
+/**
+ * Clear the current array and reset it to newSamples array
+ * @param {Array} newSamples
+ */
 function resetSamples(newSamples) {
   clearSamples();
   samples.concat(newSamples);
 }
 
-export { samples, addSample, getLastSample, clearSamples, downloadSamplesAsJsonFile, resetSamples };
+/**
+ * Add a new sample to an array and add a new property for the given. If the array contains already maxSamples elements :
+ * - remove the first element
+ * - add the new sample to the end of the array
+ * @param {Object} newSample
+ * @param {Number} maxSamples
+ * @return the extended sample data with filtered info under the property name equals to keyToFilter + "Filter"
+ * Example : if keyToFilter = 'z', then {...newSample, zFiltered : ...} will be returned
+ */
+function addSampleAndFiltering(newSample, options = { maxSamples: 1000, keyToFilter: 'z' }) {
+  if (counter >= options.maxSamples) {
+    samples.shift();
+  } else {
+    counter += 1;
+  }
+  // Add the new sample to the end of the array
+  const extendedSample = { ...newSample };
+  extendedSample[`${options.keyToFilter}Filtered`] = kalmanFilter.filter(
+    extendedSample[options.keyToFilter],
+  );
+
+  samples.push(extendedSample);
+  return extendedSample;
+}
+
+export {
+  samples,
+  addSample,
+  getLastSample,
+  clearSamples,
+  downloadSamplesAsJsonFile,
+  resetSamples,
+  addSampleAndFiltering,
+};

@@ -10,6 +10,7 @@ import {
 // eslint-disable-next-line no-unused-vars
 import {
   addSample,
+  addSampleAndFiltering,
   clearSamples,
   downloadSamplesAsJsonFile,
   // eslint-disable-next-line no-unused-vars
@@ -36,7 +37,10 @@ let displacementDirection = 1; // assume positive displacement to start
 // eslint-disable-next-line no-unused-vars
 const accelerationThreshold = 0.3; // in m/s^2
 
-let controller; // = new AbortController();
+let controller;
+
+// eslint-disable-next-line no-unused-vars
+const TIME_TO_WAIT_PRIOR_TO_SAMPLING = 1000; // in ms;
 
 const HomePage = () => {
   renderPageLayout();
@@ -51,10 +55,14 @@ const HomePage = () => {
 
   const displacementChart = DisplacementChart('#displacementChartWrapper', MAX_SAMPLES);
   const accelerationChart = AccelerationChart('#accelerationChartWrapper', MAX_SAMPLES);
+  const accelerationFilteredChart = AccelerationChart(
+    '#accelerationFilteredChartWrapper',
+    MAX_SAMPLES,
+  );
 
-  attachOnStopStartListenener(accelerationChart, displacementChart);
+  attachOnStopStartListenener(accelerationChart, displacementChart, accelerationFilteredChart);
 
-  attachOnFileSelected(accelerationChart, displacementChart);
+  attachOnFileSelected(accelerationChart, displacementChart, accelerationFilteredChart);
 
   /*
   const socket = io('http://localhost:3000');
@@ -76,12 +84,12 @@ const HomePage = () => {
 
 function renderPageLayout() {
   const main = document.querySelector('main');
-  const pageLayout = `<h3>This is your phone movement detector!</h3>
+  const pageLayout = `<h3>Phone movement detection on the Z axis</h3>
   <div>
     <button id="startStopBtn" class="btn btn-primary">Start detection</button>
   </div>
   <div class="mb-3">
-    <label for="formFile" class="form-label">Default file input example</label>
+    <label class="form-label">Provide a Json file</label>
     <input class="form-control" type="file" id="filePicker">
   </div>
   <div id="printDataWrapper" class="alert alert-secondary mt-2 d-none"></div>  
@@ -90,6 +98,9 @@ function renderPageLayout() {
 </div>
 <div class="mt-2">
     <canvas id="accelerationChartWrapper" height="500" width="500"></canvas>
+  </div>
+  <div class="mt-2">
+    <canvas id="accelerationFilteredChartWrapper" height="500" width="500"></canvas>
   </div>
   `;
   main.innerHTML = pageLayout;
@@ -118,7 +129,7 @@ async function checkNavigatorPermissionAndRenderIssues() {
   return false;
 }
 
-function attachOnFileSelected(accelerationChart, displacementChart) {
+function attachOnFileSelected(accelerationChart, displacementChart, accelerationFilteredChart) {
   const filePicker = document.querySelector('#filePicker');
 
   filePicker.addEventListener('change', (e) => {
@@ -128,41 +139,55 @@ function attachOnFileSelected(accelerationChart, displacementChart) {
       const jsonString = event.target.result;
       const mySamples = JSON.parse(jsonString);
       resetSamples(mySamples);
-      updateChart(accelerationChart, mySamples);
-      updateChart(displacementChart, mySamples);
+      updateChart(displacementChart, mySamples, mySamples, { yKey: 'z', maxSamples: MAX_SAMPLES });
+      updateChart(accelerationChart, mySamples, { yKey: 'z', maxSamples: MAX_SAMPLES });
+      updateChart(accelerationFilteredChart, mySamples, { yKey: 'zFiltered', maxSamples: MAX_SAMPLES });
     });
 
     reader.readAsText(file); // this will resolve to change event
   });
 }
 
-function attachOnStopStartListenener(accelerationChart, displacementChart) {
+function attachOnStopStartListenener(
+  accelerationChart,
+  displacementChart,
+  accelerationFilteredChart,
+) {
   const startStopBtn = document.querySelector('#startStopBtn');
   startStopBtn.addEventListener('click', () => {
     if (startStopBtn.textContent === 'Start detection') {
       controller = new AbortController();
-      startMotionDetectionAndDataRendering(accelerationChart, displacementChart);
-    } else stopMotionDetection(accelerationChart, displacementChart);
+      startMotionDetectionAndDataRendering(
+        accelerationChart,
+        displacementChart,
+        accelerationFilteredChart,
+      );
+    } else stopMotionDetection(accelerationChart, displacementChart, accelerationFilteredChart);
   });
 }
 
-async function startMotionDetectionAndDataRendering(accelerationChart, displacementChart) {
+async function startMotionDetectionAndDataRendering(
+  accelerationChart,
+  displacementChart,
+  accelerationFilteredChart,
+) {
   noSleep.enable();
   const startStopBtn = document.querySelector('#startStopBtn');
   startStopBtn.textContent = 'Stop detection';
-  attachMotionDetectionListener(accelerationChart, displacementChart);
+  attachMotionDetectionListener(accelerationChart, displacementChart, accelerationFilteredChart);
 
   /* const messageTransmittedToServer = 'Hi Websocket Server';
   socket.emit('mobile connected', messageTransmittedToServer); */
 }
 
-function stopMotionDetection(accelerationChart, displacementChart) {
+function stopMotionDetection(accelerationChart, displacementChart, accelerationFilteredChart) {
   noSleep.disable();
   const startStopBtn = document.querySelector('#startStopBtn');
   startStopBtn.textContent = 'Start detection';
   controller.abort(); // this will remove the devicemotion event listener
   clearChart(accelerationChart);
   clearChart(displacementChart);
+  clearChart(accelerationFilteredChart);
   downloadSamplesAsJsonFile();
   clearSamples();
 }
@@ -182,15 +207,36 @@ function renderPrintDataWrapper(data) {
     <p>Frequency : ${1000 / data.interval} samples / s</p>`;
 }
 
-function attachMotionDetectionListener(accelerationChart, displacementChart) {
+function attachMotionDetectionListener(
+  accelerationChart,
+  displacementChart,
+  accelerationFilteredChart,
+) {
   window.addEventListener(
     'devicemotion',
-    (motionDataEvent) => onMotionData(motionDataEvent, accelerationChart, displacementChart),
+    (motionDataEvent) =>
+      onMotionData(
+        motionDataEvent,
+        accelerationChart,
+        displacementChart,
+        accelerationFilteredChart,
+      ),
     { signal: controller.signal },
   );
 }
 
-function onMotionData(motionDataEvent, accelerationChart, displacementChart) {
+function onMotionData(
+  motionDataEvent,
+  accelerationChart,
+  displacementChart,
+  accelerationFilteredChart,
+) {
+  /*
+  if (firstSamplesToBeFiltered < TIME_TO_WAIT_PRIOR_TO_SAMPLING / motionDataEvent.interval) {
+    firstSamplesToBeFiltered += 1;
+    return undefined;
+  } */
+
   const newMotionData = {
     x: motionDataEvent.acceleration.x,
     y: motionDataEvent.acceleration.y,
@@ -202,14 +248,27 @@ function onMotionData(motionDataEvent, accelerationChart, displacementChart) {
 
   // renderPrintDataWrapper(newMotionData);
 
-  updateChart(accelerationChart, newMotionData);
+  updateChart(accelerationChart, newMotionData, {
+    yKey: 'z',
+    maxSamples: MAX_SAMPLES,
+  });
 
   // const currentExtendedMotionData = calculateAndSaveNewMotionDataRungeKuttaMethod(newMotionData);
   const currentExtendedMotionData = calculateAndSaveNewMotionDataTrapezoidalRule(newMotionData);
 
   // updateChart(accelerationChart, currentExtendedMotionData, 'xyz'); // to test with resultante acceleration
 
-  updateChart(displacementChart, currentExtendedMotionData, 'displacement');
+  updateChart(displacementChart, currentExtendedMotionData, {
+    yKey: 'displacement',
+    maxSamples: MAX_SAMPLES,
+  });
+
+  updateChart(accelerationFilteredChart, currentExtendedMotionData, {
+    yKey: 'zFiltered',
+    maxSamples: MAX_SAMPLES,
+  });
+
+  return true;
 }
 
 // eslint-disable-next-line no-unused-vars
@@ -268,11 +327,11 @@ function calculateAndSaveNewMotionDataTrapezoidalRule(newMotionData) {
   const timeStep = newMotionData.interval / 1000; // from ms to s
 
   // Check if the acceleration is above the threshold, else consider no change of velocity and displacement
-  if (Math.abs(acceleration) <= accelerationThreshold) {
+  /* if (Math.abs(acceleration) <= accelerationThreshold) {
     const currentMotionData = { ...newMotionData, velocity, displacement };
-    addSample(currentMotionData, MAX_SAMPLES);
-    return currentMotionData;
-  }
+    const extendedMotionDataWithFiltering =  addSampleAndFiltering(currentMotionData, { maxSamples: 1000, keyToFilter: 'z' });
+    return extendedMotionDataWithFiltering;
+  } */
 
   // Calculate the change in velocity using the trapezoidal rule
   const deltaVelocity = ((acceleration + (acceleration - lastAcceleration)) / 2) * timeStep;
@@ -294,9 +353,12 @@ function calculateAndSaveNewMotionDataTrapezoidalRule(newMotionData) {
 
   const currentMotionData = { ...newMotionData, velocity, displacement, displacementDirection };
 
-  addSample(currentMotionData, MAX_SAMPLES);
+  const extendedMotionDataWithFiltering = addSampleAndFiltering(currentMotionData, {
+    maxSamples: MAX_SAMPLES,
+    keyToFilter: 'z',
+  });
 
-  return currentMotionData;
+  return extendedMotionDataWithFiltering;
 }
 
 /*
