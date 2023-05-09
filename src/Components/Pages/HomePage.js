@@ -139,7 +139,7 @@ function attachOnFileSelected(accelerationChart, displacementChart, acceleration
       const jsonString = event.target.result;
       const mySamples = JSON.parse(jsonString);
       resetSamples(mySamples);
-      updateChart(displacementChart, mySamples, mySamples, { yKey: 'z', maxSamples: MAX_SAMPLES });
+      updateChart(displacementChart, mySamples, { yKey: 'displacement', maxSamples: MAX_SAMPLES });
       updateChart(accelerationChart, mySamples, { yKey: 'z', maxSamples: MAX_SAMPLES });
       updateChart(accelerationFilteredChart, mySamples, { yKey: 'zFiltered', maxSamples: MAX_SAMPLES });
     });
