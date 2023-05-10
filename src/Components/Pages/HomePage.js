@@ -2,12 +2,7 @@
 import NoSleep from 'nosleep.js';
 import * as Utils from '../../utils/chart-utils';
 // import { io } from 'socket.io-client';
-import { 
-  MotionChart,
-  clearChart,
-  rerenderChart,
-  updateChart,
-} from '../Chart/MotionChart';
+import { MotionChart, clearChart, rerenderChart } from '../Chart/MotionChart';
 // eslint-disable-next-line no-unused-vars
 import {
   addSample,
@@ -287,25 +282,16 @@ function onMotionData(
 
   // renderPrintDataWrapper(newMotionData);
 
-  updateChart(accelerationChart, newMotionData, {
-    yKey: 'z',
-    maxSamples: MAX_SAMPLES,
-  });
-
   // const currentExtendedMotionData = calculateAndSaveNewMotionDataRungeKuttaMethod(newMotionData);
   const currentExtendedMotionData = calculateAndSaveNewMotionDataTrapezoidalRule(newMotionData);
 
+  rerenderChart(accelerationChart, newMotionData);
+
   // updateChart(accelerationChart, currentExtendedMotionData, 'xyz'); // to test with resultante acceleration
 
-  updateChart(displacementChart, currentExtendedMotionData, {
-    yKey: 'displacement',
-    maxSamples: MAX_SAMPLES,
-  });
+  rerenderChart(displacementChart, currentExtendedMotionData);
 
-  updateChart(accelerationFilteredChart, currentExtendedMotionData, {
-    yKey: 'zFiltered',
-    maxSamples: MAX_SAMPLES,
-  });
+  rerenderChart(accelerationFilteredChart, currentExtendedMotionData);
 
   return true;
 }
