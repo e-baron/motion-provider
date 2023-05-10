@@ -1,10 +1,11 @@
 /* eslint-disable import/no-extraneous-dependencies */
 import NoSleep from 'nosleep.js';
+import * as Utils from '../../utils/chart-utils';
 // import { io } from 'socket.io-client';
-import {
-  AccelerationChart,
-  DisplacementChart,
+import { 
+  MotionChart,
   clearChart,
+  rerenderChart,
   updateChart,
 } from '../Chart/MotionChart';
 // eslint-disable-next-line no-unused-vars
@@ -53,12 +54,50 @@ const HomePage = () => {
 
   if (!movementDetectionEnable) return;
 
-  const displacementChart = DisplacementChart('#displacementChartWrapper', MAX_SAMPLES);
-  const accelerationChart = AccelerationChart('#accelerationChartWrapper', MAX_SAMPLES);
-  const accelerationFilteredChart = AccelerationChart(
+  const accelerationChartOptions = {
+    label: 'Z axis acceleration',
+    type: 'scatter',
+    xMax: 1000,
+    xTitle: 'Samples',
+    lineColor: Utils.CHART_COLORS.red,
+    height: 500,
+    // yMin: -0.2,
+    // yMax: 0.2,
+    yAxisKey: 'z',
+  };
+
+  const accelerationFilteredChartOptions = {
+    label: 'Z axis filtered acceleration',
+    type: 'scatter',
+    xMax: 1000,
+    xTitle: 'Samples',
+    lineColor: Utils.CHART_COLORS.green,
+    height: 500,
+    yMin: undefined,
+    yMax: undefined,
+    yAxisKey: 'zFiltered',
+  };
+
+  const displacementChartOptions = {
+    label: 'Z axis displacement',
+    type: 'scatter',
+    xMax: 1000,
+    xTitle: 'Samples',
+    lineColor: Utils.CHART_COLORS.blue,
+    height: 500,
+    yMin: undefined,
+    yMax: undefined,
+    yAxisKey: 'displacement',
+  };
+
+  const accelerationChart = MotionChart('#accelerationChartWrapper', accelerationChartOptions);
+
+  const accelerationFilteredChart = MotionChart(
     '#accelerationFilteredChartWrapper',
-    MAX_SAMPLES,
+    accelerationFilteredChartOptions,
   );
+
+  const displacementChart = MotionChart('#displacementChartWrapper', displacementChartOptions);
 
   attachOnStopStartListenener(accelerationChart, displacementChart, accelerationFilteredChart);
 
@@ -139,9 +178,9 @@ function attachOnFileSelected(accelerationChart, displacementChart, acceleration
       const jsonString = event.target.result;
       const mySamples = JSON.parse(jsonString);
       resetSamples(mySamples);
-      updateChart(displacementChart, mySamples, { yKey: 'displacement', maxSamples: MAX_SAMPLES });
-      updateChart(accelerationChart, mySamples, { yKey: 'z', maxSamples: MAX_SAMPLES });
-      updateChart(accelerationFilteredChart, mySamples, { yKey: 'zFiltered', maxSamples: MAX_SAMPLES });
+      rerenderChart(displacementChart, mySamples);
+      rerenderChart(accelerationChart, mySamples);
+      rerenderChart(accelerationFilteredChart, mySamples);
     });
 
     reader.readAsText(file); // this will resolve to change event

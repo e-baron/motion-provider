@@ -3,6 +3,81 @@ import Chart from 'chart.js/auto';
 import * as Utils from '../../utils/chart-utils';
 
 /**
+ * Start a motion chart diagram with no data and configure with options.
+ * Call the rerenderChart function to add data
+ * @param {String} wrapperSelector
+ * @param {Object} options
+ * @returns the configured chart.js chart
+ */
+const MotionChart = (wrapperSelector, options) => {
+  const givenOptions = {};
+  givenOptions.label = options?.label ?? 'Z axis acceleration';
+  givenOptions.type = options?.type ?? 'scatter';
+  givenOptions.xMax = options?.xMax ?? undefined;
+  givenOptions.xTitle = options?.xTitle ?? 'Samples';
+  givenOptions.lineColor = options?.lineColor ?? Utils.CHART_COLORS.red;
+  givenOptions.height = options?.height ?? 500;
+  givenOptions.yMin = options?.yMin ?? undefined;
+  givenOptions.yMax = options?.yMax ?? undefined;
+  givenOptions.yAxisKey = options?.yAxisKey ?? undefined;
+
+  const chartWrapper = document.querySelector(wrapperSelector);
+
+  const currentData = {
+    datasets: [
+      {
+        label: givenOptions.label,
+        data: [],
+        borderColor: givenOptions.lineColor,
+        fill: false,
+        cubicInterpolationMode: 'monotone',
+        tension: 0.4,
+      },
+    ],
+  };
+
+  const config = {
+    type: givenOptions.type, // 'scatter', // 'line',
+    data: currentData,
+    options: {
+      yAxisKey: givenOptions.yAxisKey,
+      responsive: false, // true,
+      height: givenOptions.height,
+      scales: {
+        y: {
+          min: givenOptions.yMin,
+          max: givenOptions.yMax,
+          /* ticks: {
+            stepSize: 0.1,
+          }, */
+        },
+        x: {
+          type: 'linear',
+          min: 0,
+          max: givenOptions.xMax,
+          title: {
+            display: true,
+            text: givenOptions.xTitle,
+          },
+          display: true,
+        },
+      },
+      plugins: {
+        legend: {
+          position: 'top',
+        },
+        title: {
+          display: true,
+          text: givenOptions.label,
+        },
+      },
+    },
+  };
+
+  return new Chart(chartWrapper, config);
+};
+
+/**
  * Start an acceleration chart diagram (Z axis) with no data. Call the updateChart function to add data
  * @param {String} wrapperSelector
  * @returns
@@ -148,7 +223,44 @@ function updateChart(chart, newData, options = { yKey: 'z', maxSamples: 1000 }) 
     dataset.data.shift();
     dataset.data.push(reformatedDataForXandYaxises);
     // update the x data for all elements
-    dataset.data = dataset.data.map((element, index) => ({ x: index, y: element.y}));
+    dataset.data = dataset.data.map((element, index) => ({ x: index, y: element.y }));
+    // strangely having x updated is not enough, labels have to be also updated
+    chart.data.labels = dataset.data.map((_, index) => index);
+  } else {
+    dataset.data.push(reformatedDataForXandYaxises);
+    // strangely adding x is not sufficient, corresponding labels have to be added
+    chart.data.labels.push(dataset.data.length - 1);
+  }
+  chart.update('none');
+}
+
+/**
+ * Rerender the given chart with the new data. This creates a streaming chart.
+ * Note that if an array of data is provided, the chart is completely redrawn !
+ * @param {Chart} chart
+ * @param {Object} newData
+ * @param {String} yKey : this is the name of the property given in newData for the Y Axis
+ */
+function rerenderChart(chart, newData) {
+  const dataset = chart.data.datasets[0];
+  const { yAxisKey } = chart.options;
+
+  if (Array.isArray(newData)) {
+    dataset.data = newData.map((element, index) => ({ x: index, y: element[yAxisKey] }));
+    chart.data.labels = newData.map((_, index) => index);
+    chart.options.scales.x.max = newData.length - 1;
+    chart.update('none');
+    return;
+  }
+
+  // chart.options.scales.x.max = options.maxSamples;
+  const reformatedDataForXandYaxises = { x: dataset.data.length, y: newData[yAxisKey] };
+
+  if (dataset.data.length === chart.options.scales.x.max) {
+    dataset.data.shift();
+    dataset.data.push(reformatedDataForXandYaxises);
+    // update the x data for all elements
+    dataset.data = dataset.data.map((element, index) => ({ x: index, y: element.y }));
     // strangely having x updated is not enough, labels have to be also updated
     chart.data.labels = dataset.data.map((_, index) => index);
   } else {
@@ -166,4 +278,11 @@ function clearChart(chart) {
   chart.update('none');
 }
 
-export { AccelerationChart, DisplacementChart, updateChart, clearChart };
+export {
+  AccelerationChart,
+  DisplacementChart,
+  updateChart,
+  clearChart,
+  rerenderChart,
+  MotionChart,
+};
