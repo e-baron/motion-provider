@@ -9,6 +9,7 @@ import * as Utils from '../../utils/chart-utils';
  * @param {Object} options
  * @returns the configured chart.js chart
  */
+
 const MotionChart = (wrapperSelector, options) => {
   const givenOptions = {};
   givenOptions.label = options?.label ?? 'Z axis acceleration';
