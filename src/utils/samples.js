@@ -1,7 +1,13 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import KalmanFilter from 'kalmanjs';
 
-const kalmanFilter = new KalmanFilter({ R: 0.01, Q: 3 });
+let kalmanFilter;
+
+const setKalmanFilter = (configuration = { R: 0.01, Q: 3 }) => {
+  kalmanFilter = new KalmanFilter(configuration);
+};
+
+const getKalmanFilter = () => kalmanFilter;
 
 const samples = [];
 
@@ -65,7 +71,10 @@ function resetSamples(newSamples) {
  * @return the extended sample data with filtered info under the property name equals to keyToFilter + "Filter"
  * Example : if keyToFilter = 'z', then {...newSample, zFiltered : ...} will be returned
  */
-function addSampleAndFiltering(newSample, options = { maxSamples: 1000, keyToFilter: 'z' }) {
+function addSampleAndFiltering(
+  newSample,
+  options = { maxSamples: 1000, keyToFilter: 'z', kalmanFilter: { R: 0.01, Q: 3 } },
+) {
   if (counter >= options.maxSamples) {
     samples.shift();
   } else {
@@ -89,4 +98,6 @@ export {
   downloadSamplesAsJsonFile,
   resetSamples,
   addSampleAndFiltering,
+  getKalmanFilter,
+  setKalmanFilter,
 };

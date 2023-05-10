@@ -12,6 +12,7 @@ import {
   // eslint-disable-next-line no-unused-vars
   getLastSample,
   resetSamples,
+  setKalmanFilter,
 } from '../../utils/samples';
 
 const noSleep = new NoSleep();
@@ -38,6 +39,8 @@ let controller;
 // eslint-disable-next-line no-unused-vars
 const TIME_TO_WAIT_PRIOR_TO_SAMPLING = 1000; // in ms;
 
+const KALMAN_OPTIONS = { R: 0.01, Q: 20 };
+
 const HomePage = () => {
   renderPageLayout();
 
@@ -63,7 +66,7 @@ const HomePage = () => {
 
   const accelerationFilteredChartOptions = {
     label: 'Z axis filtered acceleration',
-    type: 'scatter',
+    type: 'line',
     xMax: 1000,
     xTitle: 'Samples',
     lineColor: Utils.CHART_COLORS.green,
@@ -93,6 +96,8 @@ const HomePage = () => {
   );
 
   const displacementChart = MotionChart('#displacementChartWrapper', displacementChartOptions);
+
+  setKalmanFilter(KALMAN_OPTIONS);
 
   attachOnStopStartListenener(accelerationChart, displacementChart, accelerationFilteredChart);
 
@@ -381,6 +386,7 @@ function calculateAndSaveNewMotionDataTrapezoidalRule(newMotionData) {
   const extendedMotionDataWithFiltering = addSampleAndFiltering(currentMotionData, {
     maxSamples: MAX_SAMPLES,
     keyToFilter: 'z',
+    kalmanFilter: KALMAN_OPTIONS,
   });
 
   return extendedMotionDataWithFiltering;
