@@ -18,14 +18,13 @@ const MotionChart = (wrapperSelector, options) => {
   givenOptions.xMax = options?.xMax ?? undefined;
   givenOptions.xTitle = options?.xTitle ?? 'Samples';
   givenOptions.lineColor = options?.lineColor ?? Utils.CHART_COLORS.red;
-  givenOptions.height = options?.height ?? undefined ; // 500;
-  givenOptions.width = options?.width ?? undefined ; // 500;
+  givenOptions.height = options?.height ?? undefined; // 500;
+  givenOptions.width = options?.width ?? undefined; // 500;
   givenOptions.yMin = options?.yMin ?? undefined;
   givenOptions.yMax = options?.yMax ?? undefined;
   givenOptions.yAxisKey = options?.yAxisKey ?? undefined;
   givenOptions.responsive = options?.responsive ?? true;
   givenOptions.maintainAspectRatio = options?.maintainAspectRatio ?? false;
-
 
   MotionChartLayout(wrapperSelector, givenOptions);
 
@@ -52,7 +51,7 @@ const MotionChart = (wrapperSelector, options) => {
       responsive: givenOptions.responsive, // true,
       // height: givenOptions.height,
       // width: givenOptions.width,
-      maintainAspectRatio : false,
+      maintainAspectRatio: false,
       scales: {
         y: {
           min: givenOptions.yMin,
@@ -95,10 +94,10 @@ const MotionChart = (wrapperSelector, options) => {
 function MotionChartLayout(wrapperSelector, options) {
   const chartWrapper = document.querySelector(wrapperSelector);
   chartWrapper.innerHTML = `<div id="${wrapperSelector.substring(1)}Header"></div>
-  <div id="${wrapperSelector.substring(1)}MainDiv" style="position:relative;height:${options.height}px; width:${options.width}px">
-    <canvas id="${wrapperSelector.substring(
-      1,
-    )}Main"></canvas>
+  <div id="${wrapperSelector.substring(1)}MainDiv" style="position:relative;height:${
+    options.height
+  }px; width:${options.width}px">
+    <canvas id="${wrapperSelector.substring(1)}Main"></canvas>
   </div>
   `;
 
@@ -115,6 +114,8 @@ function MotionChartHeader(wrapperSelector, chart, options) {
   const xMaxId = `${wrapperSelector.substring(1)}xMax`;
   const widthId = `${wrapperSelector.substring(1)}width`;
   const heightId = `${wrapperSelector.substring(1)}height`;
+  const yMinId = `${wrapperSelector.substring(1)}yMin`;
+  const yMaxId = `${wrapperSelector.substring(1)}yMax`;
   chartHeaderWrapper.innerHTML = `<select id="${selectTypeId}" class="form-select" aria-label="line type">
   <option ${chartType === 'scatter' ? 'selected' : ''}>scatter</option>
   <option ${chartType === 'line' ? 'selected' : ''}>line</option> 
@@ -131,12 +132,20 @@ function MotionChartHeader(wrapperSelector, chart, options) {
 <div class="mt-3">
   <input id="${heightId}" class="form-control" type="number" placeholder="height" aria-label="height">
 </div>
+<div class="mt-3">
+  <input id="${yMinId}" class="form-control" type="number" placeholder="y min" aria-label="y min">
+</div>
+<div class="mt-3">
+  <input id="${yMaxId}" class="form-control" type="number" placeholder="y max" aria-label="y max">
+</div>
 
 `;
 
   const chartTypeSelect = document.querySelector(`#${selectTypeId}`);
   const xMinInput = document.querySelector(`#${xMinId}`);
   const xMaxInput = document.querySelector(`#${xMaxId}`);
+  const yMinInput = document.querySelector(`#${yMinId}`);
+  const yMaxInput = document.querySelector(`#${yMaxId}`);
   const widthInput = document.querySelector(`#${widthId}`);
   const heightInput = document.querySelector(`#${heightId}`);
 
@@ -159,10 +168,24 @@ function MotionChartHeader(wrapperSelector, chart, options) {
     chart.update('none');
   });
 
+  yMinInput.addEventListener('blur', (e) => {
+    const newValue = e.target.value;
+    if (!newValue) return;
+    chart.options.scales.y.min = Number(newValue);
+    chart.update('none');
+  });
+
+  yMaxInput.addEventListener('blur', (e) => {
+    const newValue = e.target.value;
+    if (!newValue) return;
+    chart.options.scales.y.max = Number(newValue);
+    chart.update('none');
+  });
+
   widthInput.addEventListener('blur', (e) => {
     const newValue = e.target.value;
     if (!newValue) return;
-    chart.options.width = Number(newValue);    
+    chart.options.width = Number(newValue);
     const chartWrapperDiv = document.querySelector(`${wrapperSelector}MainDiv`);
     chartWrapperDiv.style.width = `${chart.options.width}px`;
     chart.resize();
@@ -174,7 +197,6 @@ function MotionChartHeader(wrapperSelector, chart, options) {
     chart.options.height = Number(newValue);
     const chartWrapperDiv = document.querySelector(`${wrapperSelector}MainDiv`);
     chartWrapperDiv.style.height = `${chart.options.height}px`;
-    
   });
 }
 
