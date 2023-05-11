@@ -59,10 +59,11 @@ const HomePage = () => {
     xTitle: 'Samples',
     lineColor: Utils.CHART_COLORS.red,
     height: 500,
-    width:500,
+    width: 500,
     // yMin: -0.2,
     // yMax: 0.2,
     yAxisKey: 'z',
+    wrapperSelector: 'zChartWrapper',
   };
 
   const accelerationFilteredChartOptions = {
@@ -72,10 +73,11 @@ const HomePage = () => {
     xTitle: 'Samples',
     lineColor: Utils.CHART_COLORS.green,
     height: 500,
-    width:500,
+    width: 500,
     yMin: undefined,
     yMax: undefined,
     yAxisKey: 'zFiltered',
+    wrapperSelector: 'zFilteredChartWrapper',
   };
 
   const displacementChartOptions = {
@@ -85,26 +87,110 @@ const HomePage = () => {
     xTitle: 'Samples',
     lineColor: Utils.CHART_COLORS.blue,
     height: 500,
-    width:500,
+    width: 500,
     yMin: undefined,
     yMax: undefined,
     yAxisKey: 'displacement',
+    wrapperSelector: 'displacemntChartWrapper',
   };
 
-  const accelerationChart = MotionChart('#accelerationChartWrapper', accelerationChartOptions);
+  const alphaRotationRateChartOptions = {
+    label: 'alpha rotation rate (about its z axis)',
+    type: 'line',
+    xMax: 1000,
+    xTitle: 'Samples',
+    lineColor: Utils.CHART_COLORS.blue,
+    height: 500,
+    width: 500,
+    yMin: undefined,
+    yMax: undefined,
+    yAxisKey: 'rotationRateAlpha',
+    wrapperSelector: 'rotationRateAlphaChartWrapper',
+  };
 
-  const accelerationFilteredChart = MotionChart(
-    '#accelerationFilteredChartWrapper',
+  const betaRotationRateChartOptions = {
+    label: 'beta rotation rate (about its x axis)',
+    type: 'line',
+    xMax: 1000,
+    xTitle: 'Samples',
+    lineColor: Utils.CHART_COLORS.blue,
+    height: 500,
+    width: 500,
+    yMin: undefined,
+    yMax: undefined,
+    yAxisKey: 'rotationRateBeta',
+    wrapperSelector: 'rotationRateBetaChartWrapper',
+  };
+
+  const gammaRotationRateChartOptions = {
+    label: 'gamma rotation rate (about its y axis)',
+    type: 'line',
+    xMax: 1000,
+    xTitle: 'Samples',
+    lineColor: Utils.CHART_COLORS.blue,
+    height: 500,
+    width: 500,
+    yMin: undefined,
+    yMax: undefined,
+    yAxisKey: 'rotationRateGamma',
+    wrapperSelector: 'rotationRateGammaChartWrapper',
+  };
+
+  const gammaRotationRateFilteredChartOptions = {
+    label: 'gamma rotation rate filtered (about its y axis)',
+    type: 'line',
+    xMax: 1000,
+    xTitle: 'Samples',
+    lineColor: Utils.CHART_COLORS.blue,
+    height: 500,
+    width: 500,
+    yMin: undefined,
+    yMax: undefined,
+    yAxisKey: 'rotationRateGammaFiltered',
+    wrapperSelector: 'rotationRateGammaFilteredChartWrapper',
+  };
+
+  const chartsOptions = [
+    accelerationChartOptions,
     accelerationFilteredChartOptions,
-  );
+    displacementChartOptions,
+    gammaRotationRateChartOptions,
+    gammaRotationRateFilteredChartOptions,
+    betaRotationRateChartOptions,
+    alphaRotationRateChartOptions,
+  ];
 
-  const displacementChart = MotionChart('#displacementChartWrapper', displacementChartOptions);
+  renderChartWrappers(chartsOptions);
+
+  const accelerationChart = MotionChart(accelerationChartOptions);
+
+  const accelerationFilteredChart = MotionChart(accelerationFilteredChartOptions);
+
+  const displacementChart = MotionChart(displacementChartOptions);
+
+  const betaRotationRateChart = MotionChart(betaRotationRateChartOptions);
+
+  const gammaRotationRateChart = MotionChart(gammaRotationRateChartOptions);
+
+  const gammaRotationRateFilteredChart = MotionChart(gammaRotationRateFilteredChartOptions);
+
+  const alphaRotationRateChart = MotionChart(alphaRotationRateChartOptions);
+
+  const charts = [
+    accelerationChart,
+    accelerationFilteredChart,
+    displacementChart,
+    betaRotationRateChart,
+    gammaRotationRateChart,
+    gammaRotationRateFilteredChart,
+    alphaRotationRateChart,
+  ];
 
   setKalmanFilter(KALMAN_OPTIONS);
 
-  attachOnStopStartListenener(accelerationChart, displacementChart, accelerationFilteredChart);
+  attachOnStopStartListeneners(charts);
 
-  attachOnFileSelected(accelerationChart, displacementChart, accelerationFilteredChart);
+  attachOnFileSelected(charts);
 
   /*
   const socket = io('http://localhost:3000');
@@ -127,22 +213,17 @@ const HomePage = () => {
 function renderPageLayout() {
   const main = document.querySelector('main');
   const pageLayout = `<h3>Phone movement detection on the Z axis</h3>
-  <div>
-    <button id="startStopBtn" class="btn btn-primary">Start detection</button>
-  </div>
+  
+    <button id="startStopBtnDetection" class="btn btn-primary">Start detection</button>
+  
+  
+    <button id="startStopBtnRealTimeChart" class="btn btn-primary mx-3">Start real time charts</button>
+  
   <div class="mb-3">
     <label class="form-label">Provide a Json file</label>
     <input class="form-control" type="file" id="filePicker">
   </div>
   <div id="printDataWrapper" class="alert alert-secondary mt-2 d-none"></div>  
-  <div id="displacementChartWrapper" class="mt-2">  
-</div>
-<div  id="accelerationChartWrapper" class="mt-2">
-
-  </div>
-  <div id="accelerationFilteredChartWrapper" class="mt-2">
-   
-  </div>
   `;
   main.innerHTML = pageLayout;
 }
@@ -170,7 +251,17 @@ async function checkNavigatorPermissionAndRenderIssues() {
   return false;
 }
 
-function attachOnFileSelected(accelerationChart, displacementChart, accelerationFilteredChart) {
+function renderChartWrappers(chartsOptions) {
+  const main = document.querySelector('main');
+  let chartWrappers = '';
+  chartsOptions.forEach((chartOptions) => {
+    chartWrappers += `<div  id="${chartOptions.wrapperSelector}" class="mt-2"></div>`;
+  });
+
+  main.innerHTML += chartWrappers;
+}
+
+function attachOnFileSelected(charts) {
   const filePicker = document.querySelector('#filePicker');
 
   filePicker.addEventListener('change', (e) => {
@@ -180,55 +271,67 @@ function attachOnFileSelected(accelerationChart, displacementChart, acceleration
       const jsonString = event.target.result;
       const mySamples = JSON.parse(jsonString);
       resetSamples(mySamples);
-      updateChart(displacementChart, mySamples);
-      updateChart(accelerationChart, mySamples);
-      updateChart(accelerationFilteredChart, mySamples);
+
+      charts.forEach((chart) => updateChart(chart, mySamples));
     });
 
     reader.readAsText(file); // this will resolve to change event
   });
 }
 
-function attachOnStopStartListenener(
-  accelerationChart,
-  displacementChart,
-  accelerationFilteredChart,
-) {
-  const startStopBtn = document.querySelector('#startStopBtn');
-  startStopBtn.addEventListener('click', () => {
-    if (startStopBtn.textContent === 'Start detection') {
+function attachOnStopStartListeneners(charts) {
+  const startStopBtnDetection = document.querySelector('#startStopBtnDetection');
+  startStopBtnDetection.addEventListener('click', () => {
+    if (startStopBtnDetection.textContent === 'Start detection') {
       controller = new AbortController();
-      startMotionDetectionAndDataRendering(
-        accelerationChart,
-        displacementChart,
-        accelerationFilteredChart,
-      );
-    } else stopMotionDetection(accelerationChart, displacementChart, accelerationFilteredChart);
+      startDataSampling();
+    } else stopMotionDetection();
+  });
+
+  const startStopBtnRealTimeChart = document.querySelector('#startStopBtnRealTimeChart');
+  startStopBtnRealTimeChart.addEventListener('click', () => {
+    if (startStopBtnRealTimeChart.textContent === 'Start real time charts') {
+      controller = new AbortController();
+      startMotionDetectionAndDataRendering(charts);
+    } else stopMotionDetectionAndCharts(charts);
   });
 }
 
-async function startMotionDetectionAndDataRendering(
-  accelerationChart,
-  displacementChart,
-  accelerationFilteredChart,
-) {
+async function startMotionDetectionAndDataRendering(charts) {
   noSleep.enable();
-  const startStopBtn = document.querySelector('#startStopBtn');
-  startStopBtn.textContent = 'Stop detection';
-  attachMotionDetectionListener(accelerationChart, displacementChart, accelerationFilteredChart);
+  const startStopBtnRealTimeChart = document.querySelector('#startStopBtnRealTimeChart');
+  startStopBtnRealTimeChart.textContent = 'Stop real time charts';
+  attachMotionDetectionListener(charts);
 
   /* const messageTransmittedToServer = 'Hi Websocket Server';
   socket.emit('mobile connected', messageTransmittedToServer); */
 }
 
-function stopMotionDetection(accelerationChart, displacementChart, accelerationFilteredChart) {
+async function startDataSampling() {
+  noSleep.enable();
+  const startStopBtnDetection = document.querySelector('#startStopBtnDetection');
+  startStopBtnDetection.textContent = 'Stop detection';
+  attachMotionDetectionListener();
+
+  /* const messageTransmittedToServer = 'Hi Websocket Server';
+  socket.emit('mobile connected', messageTransmittedToServer); */
+}
+
+function stopMotionDetectionAndCharts(charts) {
   noSleep.disable();
-  const startStopBtn = document.querySelector('#startStopBtn');
-  startStopBtn.textContent = 'Start detection';
+  const startStopBtnRealTimeChart = document.querySelector('#startStopBtnRealTimeChart');
+  startStopBtnRealTimeChart.textContent = 'Start real time charts';
   controller.abort(); // this will remove the devicemotion event listener
-  clearChart(accelerationChart);
-  clearChart(displacementChart);
-  clearChart(accelerationFilteredChart);
+  charts.forEach((chart) => clearChart(chart));
+  downloadSamplesAsJsonFile();
+  clearSamples();
+}
+
+function stopMotionDetection() {
+  noSleep.disable();
+  const startStopBtnDetection = document.querySelector('#startStopBtnDetection');
+  startStopBtnDetection.textContent = 'Start detection';
+  controller.abort(); // this will remove the devicemotion event listener
   downloadSamplesAsJsonFile();
   clearSamples();
 }
@@ -248,30 +351,15 @@ function renderPrintDataWrapper(data) {
     <p>Frequency : ${1000 / data.interval} samples / s</p>`;
 }
 
-function attachMotionDetectionListener(
-  accelerationChart,
-  displacementChart,
-  accelerationFilteredChart,
-) {
+function attachMotionDetectionListener(charts) {
   window.addEventListener(
     'devicemotion',
-    (motionDataEvent) =>
-      onMotionData(
-        motionDataEvent,
-        accelerationChart,
-        displacementChart,
-        accelerationFilteredChart,
-      ),
+    (motionDataEvent) => onMotionData(motionDataEvent, charts),
     { signal: controller.signal },
   );
 }
 
-function onMotionData(
-  motionDataEvent,
-  accelerationChart,
-  displacementChart,
-  accelerationFilteredChart,
-) {
+function onMotionData(motionDataEvent, charts) {
   /*
   if (firstSamplesToBeFiltered < TIME_TO_WAIT_PRIOR_TO_SAMPLING / motionDataEvent.interval) {
     firstSamplesToBeFiltered += 1;
@@ -284,23 +372,24 @@ function onMotionData(
     z: motionDataEvent.acceleration.z,
     zIncludingGravity: motionDataEvent.accelerationIncludingGravity.z,
     interval: motionDataEvent.interval,
+    rotationRateAlpha: motionDataEvent.rotationRate.alpha,
+    rotationRateBeta: motionDataEvent.rotationRate.beta,
+    rotationRateGamma: motionDataEvent.rotationRate.gamma,
     time: new Date().getTime(),
   };
 
   // renderPrintDataWrapper(newMotionData);
 
   // const currentExtendedMotionData = calculateAndSaveNewMotionDataRungeKuttaMethod(newMotionData);
+
+  if (!charts) {
+    calculateAndSaveNewMotionDataTrapezoidalRule(newMotionData, Infinity);
+    return;
+  }
+
   const currentExtendedMotionData = calculateAndSaveNewMotionDataTrapezoidalRule(newMotionData);
 
-  updateChart(accelerationChart, newMotionData);
-
-  // updateChart(accelerationChart, currentExtendedMotionData, 'xyz'); // to test with resultante acceleration
-
-  updateChart(displacementChart, currentExtendedMotionData);
-
-  updateChart(accelerationFilteredChart, currentExtendedMotionData);
-
-  return true;
+  charts.forEach((chart) => updateChart(chart, currentExtendedMotionData));
 }
 
 // eslint-disable-next-line no-unused-vars
@@ -354,7 +443,7 @@ function calculateAndSaveNewMotionDataRungeKuttaMethod(newMotionData) {
 }
 
 // eslint-disable-next-line no-unused-vars
-function calculateAndSaveNewMotionDataTrapezoidalRule(newMotionData) {
+function calculateAndSaveNewMotionDataTrapezoidalRule(newMotionData, maxSamples = MAX_SAMPLES) {
   acceleration = newMotionData.z;
   const timeStep = newMotionData.interval / 1000; // from ms to s
 
@@ -386,8 +475,8 @@ function calculateAndSaveNewMotionDataTrapezoidalRule(newMotionData) {
   const currentMotionData = { ...newMotionData, velocity, displacement, displacementDirection };
 
   const extendedMotionDataWithFiltering = addSampleAndFiltering(currentMotionData, {
-    maxSamples: MAX_SAMPLES,
-    keyToFilter: 'z',
+    maxSamples,
+    keyToFilters: ['z', 'rotationRateGamma'],
     kalmanFilter: KALMAN_OPTIONS,
   });
 

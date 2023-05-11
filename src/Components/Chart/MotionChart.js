@@ -10,7 +10,7 @@ import * as Utils from '../../utils/chart-utils';
  * @returns the configured chart.js chart
  */
 
-const MotionChart = (wrapperSelector, options) => {
+const MotionChart = (options) => {
   const givenOptions = {};
   givenOptions.label = options?.label ?? 'Z axis acceleration';
   givenOptions.type = options?.type ?? 'scatter';
@@ -25,10 +25,11 @@ const MotionChart = (wrapperSelector, options) => {
   givenOptions.yAxisKey = options?.yAxisKey ?? undefined;
   givenOptions.responsive = options?.responsive ?? true;
   givenOptions.maintainAspectRatio = options?.maintainAspectRatio ?? false;
+  givenOptions.wrapperSelector = options?.wrapperSelector ?? 'chartWrapper';
 
-  MotionChartLayout(wrapperSelector, givenOptions);
+  MotionChartLayout(givenOptions);
 
-  const chartWrapper = document.querySelector(`${wrapperSelector}Main`);
+  const chartWrapper = document.querySelector(`#${givenOptions.wrapperSelector}Main`);
 
   const currentData = {
     datasets: [
@@ -85,19 +86,19 @@ const MotionChart = (wrapperSelector, options) => {
 
   const chart = new Chart(chartWrapper, config);
 
-  MotionChartHeader(wrapperSelector, chart, givenOptions);
+  MotionChartHeader(chart, givenOptions);
 
   return chart;
 };
 
 // eslint-disable-next-line no-unused-vars
-function MotionChartLayout(wrapperSelector, options) {
-  const chartWrapper = document.querySelector(wrapperSelector);
-  chartWrapper.innerHTML = `<div id="${wrapperSelector.substring(1)}Header"></div>
-  <div id="${wrapperSelector.substring(1)}MainDiv" style="position:relative;height:${
+function MotionChartLayout(options) {
+  const chartWrapper = document.querySelector(`#${options.wrapperSelector}`);
+  chartWrapper.innerHTML = `<div id="${options.wrapperSelector}Header"></div>
+  <div id="${options.wrapperSelector}MainDiv" style="position:relative;height:${
     options.height
   }px; width:${options.width}px">
-    <canvas id="${wrapperSelector.substring(1)}Main"></canvas>
+    <canvas id="${options.wrapperSelector}Main"></canvas>
   </div>
   `;
 
@@ -106,16 +107,16 @@ function MotionChartLayout(wrapperSelector, options) {
   `; */
 }
 
-function MotionChartHeader(wrapperSelector, chart, options) {
-  const chartHeaderWrapper = document.querySelector(`${wrapperSelector}Header`);
+function MotionChartHeader(chart, options) {
+  const chartHeaderWrapper = document.querySelector(`#${options.wrapperSelector}Header`);
   const chartType = options?.type ?? 'scatter';
-  const selectTypeId = `${wrapperSelector.substring(1)}chartTypeSelect`;
-  const xMinId = `${wrapperSelector.substring(1)}xMin`;
-  const xMaxId = `${wrapperSelector.substring(1)}xMax`;
-  const widthId = `${wrapperSelector.substring(1)}width`;
-  const heightId = `${wrapperSelector.substring(1)}height`;
-  const yMinId = `${wrapperSelector.substring(1)}yMin`;
-  const yMaxId = `${wrapperSelector.substring(1)}yMax`;
+  const selectTypeId = `${options.wrapperSelector}chartTypeSelect`;
+  const xMinId = `${options.wrapperSelector}xMin`;
+  const xMaxId = `${options.wrapperSelector}xMax`;
+  const widthId = `${options.wrapperSelector}width`;
+  const heightId = `${options.wrapperSelector}height`;
+  const yMinId = `${options.wrapperSelector}yMin`;
+  const yMaxId = `${options.wrapperSelector}yMax`;
   chartHeaderWrapper.innerHTML = `<select id="${selectTypeId}" class="form-select" aria-label="line type">
   <option ${chartType === 'scatter' ? 'selected' : ''}>scatter</option>
   <option ${chartType === 'line' ? 'selected' : ''}>line</option> 
@@ -186,7 +187,7 @@ function MotionChartHeader(wrapperSelector, chart, options) {
     const newValue = e.target.value;
     if (!newValue) return;
     chart.options.width = Number(newValue);
-    const chartWrapperDiv = document.querySelector(`${wrapperSelector}MainDiv`);
+    const chartWrapperDiv = document.querySelector(`${options.wrapperSelector}MainDiv`);
     chartWrapperDiv.style.width = `${chart.options.width}px`;
     chart.resize();
   });
@@ -195,7 +196,7 @@ function MotionChartHeader(wrapperSelector, chart, options) {
     const newValue = e.target.value;
     if (!newValue) return;
     chart.options.height = Number(newValue);
-    const chartWrapperDiv = document.querySelector(`${wrapperSelector}MainDiv`);
+    const chartWrapperDiv = document.querySelector(`${options.wrapperSelector}MainDiv`);
     chartWrapperDiv.style.height = `${chart.options.height}px`;
   });
 }

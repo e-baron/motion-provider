@@ -1,7 +1,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import KalmanFilter from 'kalmanjs';
 
-let kalmanFilter ;
+let kalmanFilter;
 const setKalmanFilter = (configuration = { R: 0.01, Q: 3 }) => {
   kalmanFilter = new KalmanFilter(configuration);
 };
@@ -72,7 +72,7 @@ function resetSamples(newSamples) {
  */
 function addSampleAndFiltering(
   newSample,
-  options = { maxSamples: 1000, keyToFilter: 'z', kalmanFilter: { R: 0.01, Q: 3 } },
+  options = { maxSamples: 1000, keyToFilters: ['z'], kalmanFilter: { R: 0.01, Q: 3 } },
 ) {
   if (counter >= options.maxSamples) {
     samples.shift();
@@ -81,9 +81,10 @@ function addSampleAndFiltering(
   }
   // Add the new sample to the end of the array
   const extendedSample = { ...newSample };
-  extendedSample[`${options.keyToFilter}Filtered`] = kalmanFilter.filter(
-    extendedSample[options.keyToFilter],
-  );
+
+  options.keyToFilters.forEach((key) => {
+    extendedSample[`${key}Filtered`] = kalmanFilter.filter(extendedSample[key]);
+  });
 
   samples.push(extendedSample);
   return extendedSample;
