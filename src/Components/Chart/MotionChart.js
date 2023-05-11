@@ -14,15 +14,22 @@ const MotionChart = (wrapperSelector, options) => {
   const givenOptions = {};
   givenOptions.label = options?.label ?? 'Z axis acceleration';
   givenOptions.type = options?.type ?? 'scatter';
+  givenOptions.xMin = options?.xMin ?? 0;
   givenOptions.xMax = options?.xMax ?? undefined;
   givenOptions.xTitle = options?.xTitle ?? 'Samples';
   givenOptions.lineColor = options?.lineColor ?? Utils.CHART_COLORS.red;
-  givenOptions.height = options?.height ?? 500;
+  givenOptions.height = options?.height ?? undefined ; // 500;
+  givenOptions.width = options?.width ?? undefined ; // 500;
   givenOptions.yMin = options?.yMin ?? undefined;
   givenOptions.yMax = options?.yMax ?? undefined;
   givenOptions.yAxisKey = options?.yAxisKey ?? undefined;
+  givenOptions.responsive = options?.responsive ?? true;
+  givenOptions.maintainAspectRatio = options?.maintainAspectRatio ?? false;
 
-  const chartWrapper = document.querySelector(wrapperSelector);
+
+  MotionChartLayout(wrapperSelector, givenOptions);
+
+  const chartWrapper = document.querySelector(`${wrapperSelector}Main`);
 
   const currentData = {
     datasets: [
@@ -42,8 +49,10 @@ const MotionChart = (wrapperSelector, options) => {
     data: currentData,
     options: {
       yAxisKey: givenOptions.yAxisKey,
-      responsive: false, // true,
-      height: givenOptions.height,
+      responsive: givenOptions.responsive, // true,
+      // height: givenOptions.height,
+      // width: givenOptions.width,
+      maintainAspectRatio : false,
       scales: {
         y: {
           min: givenOptions.yMin,
@@ -54,7 +63,7 @@ const MotionChart = (wrapperSelector, options) => {
         },
         x: {
           type: 'linear',
-          min: 0,
+          min: givenOptions.xMin,
           max: givenOptions.xMax,
           title: {
             display: true,
@@ -75,164 +84,98 @@ const MotionChart = (wrapperSelector, options) => {
     },
   };
 
-  return new Chart(chartWrapper, config);
+  const chart = new Chart(chartWrapper, config);
+
+  MotionChartHeader(wrapperSelector, chart, givenOptions);
+
+  return chart;
 };
 
-/**
- * Start an acceleration chart diagram (Z axis) with no data. Call the updateChart function to add data
- * @param {String} wrapperSelector
- * @returns
- */
-const AccelerationChart = (wrapperSelector, maxSamples = 1000) => {
+// eslint-disable-next-line no-unused-vars
+function MotionChartLayout(wrapperSelector, options) {
   const chartWrapper = document.querySelector(wrapperSelector);
+  chartWrapper.innerHTML = `<div id="${wrapperSelector.substring(1)}Header"></div>
+  <div id="${wrapperSelector.substring(1)}MainDiv" style="position:relative;height:${options.height}px; width:${options.width}px">
+    <canvas id="${wrapperSelector.substring(
+      1,
+    )}Main"></canvas>
+  </div>
+  `;
 
-  const currentData = {
-    datasets: [
-      {
-        label: 'Z axis acceleration',
-        data: [],
-        borderColor: Utils.CHART_COLORS.red,
-        // backgroundColor: Utils.transparentize(Utils.CHART_COLORS.red),
-        fill: false,
-        cubicInterpolationMode: 'monotone',
-        tension: 0.4,
-      },
-    ],
-  };
+  /* chartWrapper.innerHTML = `<div id="${wrapperSelector.substring(1)}Header"></div>
+  <canvas id="${wrapperSelector.substring(1)}Main"></canvas>
+  `; */
+}
 
-  const config = {
-    type: 'scatter', // 'scatter', // 'line',
-    data: currentData,
-    options: {
-      responsive: false, // true,
-      height: 500,
-      scales: {
-        y: {
-          min: -1,
-          max: 1,
-          ticks: {
-            stepSize: 0.1,
-          },
-        },
-        x: {
-          type: 'linear',
-          min: 0,
-          max: maxSamples - 1,
-          title: {
-            display: true,
-            text: 'Samples',
-          },
-          display: true,
-        },
-      },
-      plugins: {
-        legend: {
-          position: 'top',
-        },
-        title: {
-          display: true,
-          text: 'Z axis acceleration',
-        },
-      },
-    },
-  };
+function MotionChartHeader(wrapperSelector, chart, options) {
+  const chartHeaderWrapper = document.querySelector(`${wrapperSelector}Header`);
+  const chartType = options?.type ?? 'scatter';
+  const selectTypeId = `${wrapperSelector.substring(1)}chartTypeSelect`;
+  const xMinId = `${wrapperSelector.substring(1)}xMin`;
+  const xMaxId = `${wrapperSelector.substring(1)}xMax`;
+  const widthId = `${wrapperSelector.substring(1)}width`;
+  const heightId = `${wrapperSelector.substring(1)}height`;
+  chartHeaderWrapper.innerHTML = `<select id="${selectTypeId}" class="form-select" aria-label="line type">
+  <option ${chartType === 'scatter' ? 'selected' : ''}>scatter</option>
+  <option ${chartType === 'line' ? 'selected' : ''}>line</option> 
+</select>
+<div class="mt-3">
+  <input id="${xMinId}" class="form-control" type="number" placeholder="x min" aria-label="x min">
+</div>
+<div class="mt-3">
+  <input id="${xMaxId}" class="form-control" type="number" placeholder="x max" aria-label="x max">
+</div>
+<div class="mt-3">
+  <input id="${widthId}" class="form-control" type="number" placeholder="width" aria-label="width">
+</div>
+<div class="mt-3">
+  <input id="${heightId}" class="form-control" type="number" placeholder="height" aria-label="height">
+</div>
 
-  return new Chart(chartWrapper, config);
-};
+`;
 
-/**
- * Start a displacement chart (Z axis) diagram with no data. Call the updateChart function to add data
- * @param {String} wrapperSelector
- * @returns
- */
-const DisplacementChart = (wrapperSelector, maxSamples = 1000) => {
-  const chartWrapper = document.querySelector(wrapperSelector);
+  const chartTypeSelect = document.querySelector(`#${selectTypeId}`);
+  const xMinInput = document.querySelector(`#${xMinId}`);
+  const xMaxInput = document.querySelector(`#${xMaxId}`);
+  const widthInput = document.querySelector(`#${widthId}`);
+  const heightInput = document.querySelector(`#${heightId}`);
 
-  const currentData = {
-    datasets: [
-      {
-        label: 'Z axis displacement',
-        data: [],
-        borderColor: Utils.CHART_COLORS.blue,
-        // backgroundColor: Utils.transparentize(Utils.CHART_COLORS.red),
-        fill: false,
-        cubicInterpolationMode: 'monotone',
-        tension: 0.4,
-      },
-    ],
-  };
-
-  const config = {
-    type: 'scatter', // 'scatter', // 'line',
-    data: currentData,
-    options: {
-      responsive: false, // true,
-      height: 500,
-      scales: {
-        y: {
-          min: -300,
-          max: 300,
-        },
-        x: {
-          type: 'linear',
-          min: 0,
-          max: maxSamples - 1,
-          title: {
-            display: true,
-            text: 'Samples',
-          },
-          display: true,
-        },
-      },
-      plugins: {
-        legend: {
-          position: 'top',
-        },
-        title: {
-          display: true,
-          text: 'Z axis displacement',
-        },
-      },
-    },
-  };
-
-  return new Chart(chartWrapper, config);
-};
-
-/**
- * Rerender the given chart with the new data. This creates a streaming chart.
- * Note that if an array of data is provided, the chart is completely redrawn !
- * @param {Chart} chart
- * @param {Object} newData
- * @param {String} yKey : this is the name of the property given in newData for the Y Axis
- */
-function updateChart(chart, newData, options = { yKey: 'z', maxSamples: 1000 }) {
-  const dataset = chart.data.datasets[0];
-
-  if (Array.isArray(newData)) {
-    dataset.data = newData.map((element, index) => ({ x: index, y: element[options.yKey] }));
-    chart.data.labels = newData.map((_, index) => index);
-    chart.options.scales.x.max = newData.length - 1;
+  chartTypeSelect.addEventListener('change', (e) => {
+    chart.config.type = e.target.options[e.target.selectedIndex].value;
     chart.update('none');
-    return;
-  }
+  });
 
-  chart.options.scales.x.max = options.maxSamples;
-  const reformatedDataForXandYaxises = { x: dataset.data.length, y: newData[options.yKey] };
+  xMinInput.addEventListener('blur', (e) => {
+    const newValue = e.target.value;
+    if (!newValue) return;
+    chart.options.scales.x.min = Number(newValue);
+    chart.update('none');
+  });
 
-  if (dataset.data.length === options.maxSamples) {
-    dataset.data.shift();
-    dataset.data.push(reformatedDataForXandYaxises);
-    // update the x data for all elements
-    dataset.data = dataset.data.map((element, index) => ({ x: index, y: element.y }));
-    // strangely having x updated is not enough, labels have to be also updated
-    chart.data.labels = dataset.data.map((_, index) => index);
-  } else {
-    dataset.data.push(reformatedDataForXandYaxises);
-    // strangely adding x is not sufficient, corresponding labels have to be added
-    chart.data.labels.push(dataset.data.length - 1);
-  }
-  chart.update('none');
+  xMaxInput.addEventListener('blur', (e) => {
+    const newValue = e.target.value;
+    if (!newValue) return;
+    chart.options.scales.x.max = Number(newValue);
+    chart.update('none');
+  });
+
+  widthInput.addEventListener('blur', (e) => {
+    const newValue = e.target.value;
+    if (!newValue) return;
+    chart.options.width = Number(newValue);    
+    const chartWrapperDiv = document.querySelector(`${wrapperSelector}MainDiv`);
+    chartWrapperDiv.style.width = `${chart.options.width}px`;
+    chart.resize();
+  });
+
+  heightInput.addEventListener('blur', (e) => {
+    const newValue = e.target.value;
+    if (!newValue) return;
+    chart.options.height = Number(newValue);
+    const chartWrapperDiv = document.querySelector(`${wrapperSelector}MainDiv`);
+    chartWrapperDiv.style.height = `${chart.options.height}px`;
+    
+  });
 }
 
 /**
@@ -240,9 +183,8 @@ function updateChart(chart, newData, options = { yKey: 'z', maxSamples: 1000 }) 
  * Note that if an array of data is provided, the chart is completely redrawn !
  * @param {Chart} chart
  * @param {Object} newData
- * @param {String} yKey : this is the name of the property given in newData for the Y Axis
  */
-function rerenderChart(chart, newData) {
+function updateChart(chart, newData) {
   const dataset = chart.data.datasets[0];
   const { yAxisKey } = chart.options;
 
@@ -279,11 +221,29 @@ function clearChart(chart) {
   chart.update('none');
 }
 
-export {
-  AccelerationChart,
-  DisplacementChart,
-  updateChart,
-  clearChart,
-  rerenderChart,
-  MotionChart,
-};
+function updateChartOptions(chart, updatedChartOptions) {
+  const dataset = chart.data.datasets[0];
+
+  if ('label' in updatedChartOptions) dataset.label = updateChartOptions.label;
+
+  if ('lineColor' in updatedChartOptions) dataset.borderColer = updatedChartOptions.lineColor;
+
+  if ('type' in updatedChartOptions) chart.type = updatedChartOptions.type;
+
+  if ('xTitle' in updatedChartOptions)
+    chart.options.plugins.title.text = updatedChartOptions.xTitle;
+
+  if ('xMax' in updatedChartOptions) chart.options.scales.x.max = updatedChartOptions.xMax;
+
+  if ('height' in updatedChartOptions) chart.options.height = updatedChartOptions.height;
+
+  if ('yMin' in updatedChartOptions) chart.options.scales.y.min = updatedChartOptions.yMin;
+
+  if ('yMax' in updatedChartOptions) chart.options.scales.y.max = updatedChartOptions.xMax;
+
+  if ('yAxisKey' in updatedChartOptions) chart.options.yAxisKey = updatedChartOptions.yAxisKey;
+
+  chart.update('none');
+}
+
+export { updateChart, clearChart, MotionChart, updateChartOptions };

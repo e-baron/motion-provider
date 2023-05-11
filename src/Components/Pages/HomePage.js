@@ -2,7 +2,7 @@
 import NoSleep from 'nosleep.js';
 import * as Utils from '../../utils/chart-utils';
 // import { io } from 'socket.io-client';
-import { MotionChart, clearChart, rerenderChart } from '../Chart/MotionChart';
+import { MotionChart, clearChart, updateChart } from '../Chart/MotionChart';
 // eslint-disable-next-line no-unused-vars
 import {
   addSample,
@@ -39,7 +39,7 @@ let controller;
 // eslint-disable-next-line no-unused-vars
 const TIME_TO_WAIT_PRIOR_TO_SAMPLING = 1000; // in ms;
 
-const KALMAN_OPTIONS = { R: 0.01, Q: 20 };
+const KALMAN_OPTIONS = { R: 0.01, Q: 0.1 };
 
 const HomePage = () => {
   renderPageLayout();
@@ -59,6 +59,7 @@ const HomePage = () => {
     xTitle: 'Samples',
     lineColor: Utils.CHART_COLORS.red,
     height: 500,
+    width:500,
     // yMin: -0.2,
     // yMax: 0.2,
     yAxisKey: 'z',
@@ -71,6 +72,7 @@ const HomePage = () => {
     xTitle: 'Samples',
     lineColor: Utils.CHART_COLORS.green,
     height: 500,
+    width:500,
     yMin: undefined,
     yMax: undefined,
     yAxisKey: 'zFiltered',
@@ -83,6 +85,7 @@ const HomePage = () => {
     xTitle: 'Samples',
     lineColor: Utils.CHART_COLORS.blue,
     height: 500,
+    width:500,
     yMin: undefined,
     yMax: undefined,
     yAxisKey: 'displacement',
@@ -132,14 +135,13 @@ function renderPageLayout() {
     <input class="form-control" type="file" id="filePicker">
   </div>
   <div id="printDataWrapper" class="alert alert-secondary mt-2 d-none"></div>  
-  <div class="mt-2">
-  <canvas id="displacementChartWrapper" height="500" width="500"></canvas>
+  <div id="displacementChartWrapper" class="mt-2">  
 </div>
-<div class="mt-2">
-    <canvas id="accelerationChartWrapper" height="500" width="500"></canvas>
+<div  id="accelerationChartWrapper" class="mt-2">
+
   </div>
-  <div class="mt-2">
-    <canvas id="accelerationFilteredChartWrapper" height="500" width="500"></canvas>
+  <div id="accelerationFilteredChartWrapper" class="mt-2">
+   
   </div>
   `;
   main.innerHTML = pageLayout;
@@ -178,9 +180,9 @@ function attachOnFileSelected(accelerationChart, displacementChart, acceleration
       const jsonString = event.target.result;
       const mySamples = JSON.parse(jsonString);
       resetSamples(mySamples);
-      rerenderChart(displacementChart, mySamples);
-      rerenderChart(accelerationChart, mySamples);
-      rerenderChart(accelerationFilteredChart, mySamples);
+      updateChart(displacementChart, mySamples);
+      updateChart(accelerationChart, mySamples);
+      updateChart(accelerationFilteredChart, mySamples);
     });
 
     reader.readAsText(file); // this will resolve to change event
@@ -290,13 +292,13 @@ function onMotionData(
   // const currentExtendedMotionData = calculateAndSaveNewMotionDataRungeKuttaMethod(newMotionData);
   const currentExtendedMotionData = calculateAndSaveNewMotionDataTrapezoidalRule(newMotionData);
 
-  rerenderChart(accelerationChart, newMotionData);
+  updateChart(accelerationChart, newMotionData);
 
   // updateChart(accelerationChart, currentExtendedMotionData, 'xyz'); // to test with resultante acceleration
 
-  rerenderChart(displacementChart, currentExtendedMotionData);
+  updateChart(displacementChart, currentExtendedMotionData);
 
-  rerenderChart(accelerationFilteredChart, currentExtendedMotionData);
+  updateChart(accelerationFilteredChart, currentExtendedMotionData);
 
   return true;
 }

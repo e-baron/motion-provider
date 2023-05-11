@@ -1,8 +1,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import KalmanFilter from 'kalmanjs';
 
-let kalmanFilter;
-
+let kalmanFilter ;
 const setKalmanFilter = (configuration = { R: 0.01, Q: 3 }) => {
   kalmanFilter = new KalmanFilter(configuration);
 };
