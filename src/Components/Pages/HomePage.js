@@ -95,7 +95,7 @@ const HomePage = () => {
   };
 
   const alphaRotationRateChartOptions = {
-    label: 'alpha rotation rate (about its z axis)',
+    label: 'alpha rotation rate : rotation of Z axis around X',
     type: 'line',
     xMax: 1000,
     xTitle: 'Samples',
@@ -108,8 +108,22 @@ const HomePage = () => {
     wrapperSelector: 'rotationRateAlphaChartWrapper',
   };
 
+  const alphaRotationRateFilteredChartOptions = {
+    label: 'alpha rotation rate filtered : rotation of Z axis around X)',
+    type: 'line',
+    xMax: 1000,
+    xTitle: 'Samples',
+    lineColor: Utils.CHART_COLORS.blue,
+    height: 500,
+    width: 500,
+    yMin: undefined,
+    yMax: undefined,
+    yAxisKey: 'rotationRateAlphaFiltered',
+    wrapperSelector: 'rotationRateAlphaFilteredChartWrapper',
+  };
+
   const betaRotationRateChartOptions = {
-    label: 'beta rotation rate (about its x axis)',
+    label: 'beta rotation rate : rotation of X axis around Y',
     type: 'line',
     xMax: 1000,
     xTitle: 'Samples',
@@ -123,7 +137,7 @@ const HomePage = () => {
   };
 
   const gammaRotationRateChartOptions = {
-    label: 'gamma rotation rate (about its y axis)',
+    label: 'gamma rotation rate : rotation of Y axis around Z',
     type: 'line',
     xMax: 1000,
     xTitle: 'Samples',
@@ -136,28 +150,14 @@ const HomePage = () => {
     wrapperSelector: 'rotationRateGammaChartWrapper',
   };
 
-  const gammaRotationRateFilteredChartOptions = {
-    label: 'gamma rotation rate filtered (about its y axis)',
-    type: 'line',
-    xMax: 1000,
-    xTitle: 'Samples',
-    lineColor: Utils.CHART_COLORS.blue,
-    height: 500,
-    width: 500,
-    yMin: undefined,
-    yMax: undefined,
-    yAxisKey: 'rotationRateGammaFiltered',
-    wrapperSelector: 'rotationRateGammaFilteredChartWrapper',
-  };
-
   const chartsOptions = [
+    alphaRotationRateChartOptions,
+    alphaRotationRateFilteredChartOptions,
     accelerationChartOptions,
     accelerationFilteredChartOptions,
     displacementChartOptions,
     gammaRotationRateChartOptions,
-    gammaRotationRateFilteredChartOptions,
     betaRotationRateChartOptions,
-    alphaRotationRateChartOptions,
   ];
 
   renderChartWrappers(chartsOptions);
@@ -172,7 +172,7 @@ const HomePage = () => {
 
   const gammaRotationRateChart = MotionChart(gammaRotationRateChartOptions);
 
-  const gammaRotationRateFilteredChart = MotionChart(gammaRotationRateFilteredChartOptions);
+  const alphaRotationRateFilteredChart = MotionChart(alphaRotationRateFilteredChartOptions);
 
   const alphaRotationRateChart = MotionChart(alphaRotationRateChartOptions);
 
@@ -182,7 +182,7 @@ const HomePage = () => {
     displacementChart,
     betaRotationRateChart,
     gammaRotationRateChart,
-    gammaRotationRateFilteredChart,
+    alphaRotationRateFilteredChart,
     alphaRotationRateChart,
   ];
 
@@ -476,7 +476,7 @@ function calculateAndSaveNewMotionDataTrapezoidalRule(newMotionData, maxSamples 
 
   const extendedMotionDataWithFiltering = addSampleAndFiltering(currentMotionData, {
     maxSamples,
-    keyToFilters: ['z', 'rotationRateGamma'],
+    keyToFilters: ['z', 'rotationRateAlpha'],
     kalmanFilter: KALMAN_OPTIONS,
   });
 
