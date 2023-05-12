@@ -12,6 +12,14 @@ const samples = [];
 
 let counter = 0;
 
+const EXPECTED_SAMPLE_COUNT_ABOVE_POSITIVE_THRESHOLD = 10;
+const EXPECTED_SAMPLE_COUNT_ABOVE_NEGATIVE_THRESHOLD = 10;
+const ROTATION_RATE_POSITIVE_THRESHOLD = 0.5;
+const ROTATION_RATE_NEGATIVE_THRESHOLD = -0.5;
+let currentBreathingState = 0;
+let currentRotationRateCountAbovePositiveThreshold = 0;
+let currentRotationRateCountAboveNegativeThreshold = 0;
+
 /**
  * Add a new sample to an array. If the array contains already maxSamples elements :
  * - remove the first element
@@ -72,7 +80,12 @@ function resetSamples(newSamples) {
  */
 function addSampleAndFiltering(
   newSample,
-  options = { maxSamples: 1000, keyToFilters: ['z'], kalmanFilter: { R: 0.01, Q: 3 } },
+  options = {
+    maxSamples: 1000,
+    keyToFilters: ['z'],
+    kalmanFilter: { R: 0.01, Q: 3 },
+    keyToDetermineInOut: 'rotationRateAlpha',
+  },
 ) {
   if (counter >= options.maxSamples) {
     samples.shift();
@@ -86,8 +99,146 @@ function addSampleAndFiltering(
     extendedSample[`${key}Filtered`] = kalmanFilter.filter(extendedSample[key]);
   });
 
+  extendedSample.inOut = determineInOutState(newSample, options.keyToDetermineInOut);
+
   samples.push(extendedSample);
   return extendedSample;
+}
+
+/**
+ * Determine if the current sample, based on a rotationRate, corresponds to an in or out breath
+ * @param {Object} newSample
+ * @param {String} keyToDetermineInOut
+ * @returns the in or out status breath (0 is the unknown status, 1 is in, -1 is out)
+ */
+function determineInOutState(newSample, keyToDetermineInOut) {
+  const currentRotationRate = newSample[keyToDetermineInOut];
+
+  if (currentBreathingState === 0) {
+    if (
+      currentRotationRateCountAboveNegativeThreshold === 0 &&
+      currentRotationRateCountAbovePositiveThreshold === 0
+    ) {
+      if (currentRotationRate >= ROTATION_RATE_POSITIVE_THRESHOLD) {
+        currentRotationRateCountAbovePositiveThreshold += 1;
+        return currentBreathingState; // 0
+      }
+
+      if (currentRotationRate <= ROTATION_RATE_NEGATIVE_THRESHOLD) {
+        currentRotationRateCountAboveNegativeThreshold += 1;
+        return currentBreathingState; // 0
+      }
+    }
+
+    if (currentRotationRateCountAbovePositiveThreshold >= 1) {
+      if (currentRotationRate > 0) {
+        currentRotationRateCountAbovePositiveThreshold += 1;
+        if (
+          currentRotationRateCountAbovePositiveThreshold ===
+          EXPECTED_SAMPLE_COUNT_ABOVE_POSITIVE_THRESHOLD
+        ) {
+          currentBreathingState = 1;
+          // reinit other state variables
+          currentRotationRateCountAbovePositiveThreshold = 0;
+          return currentBreathingState; // 1
+        }
+        // threshold not met
+        return currentBreathingState; // 0
+      }
+      // currentRotationRate <= 0 => reset state variables
+      currentRotationRateCountAbovePositiveThreshold = 0;
+      if (currentRotationRate < ROTATION_RATE_NEGATIVE_THRESHOLD) {
+        currentRotationRateCountAboveNegativeThreshold = +1;
+      }
+      return currentBreathingState; // 0
+    }
+
+    if (currentRotationRateCountAboveNegativeThreshold >= 1) {
+      if (currentRotationRate < 0) {
+        currentRotationRateCountAboveNegativeThreshold += 1;
+        if (
+          currentRotationRateCountAboveNegativeThreshold ===
+          EXPECTED_SAMPLE_COUNT_ABOVE_NEGATIVE_THRESHOLD
+        ) {
+          currentBreathingState = -1;
+          // reinit other state variables
+          currentRotationRateCountAboveNegativeThreshold = 0;
+          return currentBreathingState; // -1
+        }
+        // threshold not met
+        return currentBreathingState; // 0
+      }
+      // currentRotationRate >= 0 => reset state variables
+      currentRotationRateCountAboveNegativeThreshold = 0;
+      if (currentRotationRate > ROTATION_RATE_POSITIVE_THRESHOLD) {
+        currentRotationRateCountAbovePositiveThreshold = +1;
+      }
+      return currentBreathingState; // 0
+    }
+  }
+
+  if (currentBreathingState === 1) {
+    if (currentRotationRateCountAboveNegativeThreshold === 0) {
+      if (currentRotationRate <= ROTATION_RATE_NEGATIVE_THRESHOLD) {
+        currentRotationRateCountAboveNegativeThreshold += 1;
+        return currentBreathingState; // 1
+      }
+      // nothing to be done
+      return currentBreathingState; // 1
+    }
+
+    if (currentRotationRateCountAboveNegativeThreshold >= 1) {
+      if (currentRotationRate < 0) {
+        currentRotationRateCountAboveNegativeThreshold += 1;
+        if (
+          currentRotationRateCountAboveNegativeThreshold ===
+          EXPECTED_SAMPLE_COUNT_ABOVE_NEGATIVE_THRESHOLD
+        ) {
+          currentBreathingState = -1;
+          // reinit other state variables
+          currentRotationRateCountAboveNegativeThreshold = 0;
+          return currentBreathingState; // -1
+        }
+        // threshold not met
+        return currentBreathingState; // 1
+      }
+      // currentRotationRate >= 0 => reset state variables
+      currentRotationRateCountAboveNegativeThreshold = 0;
+      return currentBreathingState; // 1
+    }
+  }
+
+  if (currentBreathingState === -1) {
+    if (currentRotationRateCountAbovePositiveThreshold === 0) {
+      if (currentRotationRate >= ROTATION_RATE_POSITIVE_THRESHOLD) {
+        currentRotationRateCountAbovePositiveThreshold += 1;
+        return currentBreathingState; // -1
+      }
+      // nothing to be done
+      return currentBreathingState; // -1
+    }
+
+    if (currentRotationRateCountAbovePositiveThreshold >= 1) {
+      if (currentRotationRate > 0) {
+        currentRotationRateCountAbovePositiveThreshold += 1;
+        if (
+          currentRotationRateCountAbovePositiveThreshold ===
+          EXPECTED_SAMPLE_COUNT_ABOVE_POSITIVE_THRESHOLD
+        ) {
+          currentBreathingState = 1;
+          // reinit other state variables
+          currentRotationRateCountAbovePositiveThreshold = 0;
+          return currentBreathingState; // 1
+        }
+        // threshold not met
+        return currentBreathingState; // 0
+      }
+      // currentRotationRate <= 0 => reset state variables
+      currentRotationRateCountAbovePositiveThreshold = 0;
+      return currentBreathingState; // -1
+    }
+  }
+  return 0;
 }
 
 export {

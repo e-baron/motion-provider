@@ -39,7 +39,7 @@ let controller;
 // eslint-disable-next-line no-unused-vars
 const TIME_TO_WAIT_PRIOR_TO_SAMPLING = 1000; // in ms;
 
-const KALMAN_OPTIONS = { R: 0.01, Q: 0.1 };
+const KALMAN_OPTIONS = { R: 0.01, Q: 0.5, A : 1.2 };
 
 const HomePage = () => {
   renderPageLayout();
@@ -106,6 +106,7 @@ const HomePage = () => {
     yMax: undefined,
     yAxisKey: 'rotationRateAlpha',
     wrapperSelector: 'rotationRateAlphaChartWrapper',
+    stepSize: 0.5,
   };
 
   const alphaRotationRateFilteredChartOptions = {
@@ -150,7 +151,22 @@ const HomePage = () => {
     wrapperSelector: 'rotationRateGammaChartWrapper',
   };
 
+  const inOutChartOptions = {
+    label: 'In or out',
+    type: 'line',
+    xMax: 1000,
+    xTitle: 'Samples',
+    lineColor: Utils.CHART_COLORS.blue,
+    height: 500,
+    width: 500,
+    yMin: undefined,
+    yMax: undefined,
+    yAxisKey: 'inOut',
+    wrapperSelector: 'inOutChartWrapper',
+  };
+
   const chartsOptions = [
+    inOutChartOptions,
     alphaRotationRateChartOptions,
     alphaRotationRateFilteredChartOptions,
     accelerationChartOptions,
@@ -161,6 +177,8 @@ const HomePage = () => {
   ];
 
   renderChartWrappers(chartsOptions);
+
+  const inOutChart = MotionChart(inOutChartOptions);
 
   const accelerationChart = MotionChart(accelerationChartOptions);
 
@@ -177,6 +195,7 @@ const HomePage = () => {
   const alphaRotationRateChart = MotionChart(alphaRotationRateChartOptions);
 
   const charts = [
+    inOutChart,
     accelerationChart,
     accelerationFilteredChart,
     displacementChart,
@@ -478,6 +497,7 @@ function calculateAndSaveNewMotionDataTrapezoidalRule(newMotionData, maxSamples 
     maxSamples,
     keyToFilters: ['z', 'rotationRateAlpha'],
     kalmanFilter: KALMAN_OPTIONS,
+    keyToDetermineInOut: 'rotationRateAlpha',
   });
 
   return extendedMotionDataWithFiltering;

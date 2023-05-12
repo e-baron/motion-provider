@@ -24,6 +24,7 @@ const MotionChart = (options) => {
   givenOptions.yMax = options?.yMax ?? undefined;
   givenOptions.yAxisKey = options?.yAxisKey ?? undefined;
   givenOptions.responsive = options?.responsive ?? true;
+  givenOptions.stepSize = options?.stepSize ?? undefined;
   givenOptions.maintainAspectRatio = options?.maintainAspectRatio ?? false;
   givenOptions.wrapperSelector = options?.wrapperSelector ?? 'chartWrapper';
 
@@ -57,9 +58,9 @@ const MotionChart = (options) => {
         y: {
           min: givenOptions.yMin,
           max: givenOptions.yMax,
-          /* ticks: {
-            stepSize: 0.1,
-          }, */
+          ticks: {
+            stepSize: givenOptions.stepSize,
+          },
         },
         x: {
           type: 'linear',
@@ -95,9 +96,7 @@ const MotionChart = (options) => {
 function MotionChartLayout(options) {
   const chartWrapper = document.querySelector(`#${options.wrapperSelector}`);
   chartWrapper.innerHTML = `<div id="${options.wrapperSelector}Header"></div>
-  <div id="${options.wrapperSelector}MainDiv" style="position:relative;height:${
-    options.height
-  }px; width:${options.width}px">
+  <div id="${options.wrapperSelector}MainDiv" style="position:relative;height:${options.height}px; width:${options.width}px">
     <canvas id="${options.wrapperSelector}Main"></canvas>
   </div>
   `;
@@ -187,7 +186,7 @@ function MotionChartHeader(chart, options) {
     const newValue = e.target.value;
     if (!newValue) return;
     chart.options.width = Number(newValue);
-    const chartWrapperDiv = document.querySelector(`${options.wrapperSelector}MainDiv`);
+    const chartWrapperDiv = document.querySelector(`#${options.wrapperSelector}MainDiv`);
     chartWrapperDiv.style.width = `${chart.options.width}px`;
     chart.resize();
   });
@@ -196,7 +195,7 @@ function MotionChartHeader(chart, options) {
     const newValue = e.target.value;
     if (!newValue) return;
     chart.options.height = Number(newValue);
-    const chartWrapperDiv = document.querySelector(`${options.wrapperSelector}MainDiv`);
+    const chartWrapperDiv = document.querySelector(`#${options.wrapperSelector}MainDiv`);
     chartWrapperDiv.style.height = `${chart.options.height}px`;
   });
 }
