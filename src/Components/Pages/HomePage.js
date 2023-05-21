@@ -378,7 +378,7 @@ function attachMotionDetectionListener(charts) {
   );
 }
 
-function onMotionData(motionDataEvent, charts) {
+async function onMotionData(motionDataEvent, charts) {
   /*
   if (firstSamplesToBeFiltered < TIME_TO_WAIT_PRIOR_TO_SAMPLING / motionDataEvent.interval) {
     firstSamplesToBeFiltered += 1;
@@ -402,11 +402,11 @@ function onMotionData(motionDataEvent, charts) {
   // const currentExtendedMotionData = calculateAndSaveNewMotionDataRungeKuttaMethod(newMotionData);
 
   if (!charts) {
-    calculateAndSaveNewMotionDataTrapezoidalRule(newMotionData, Infinity);
+    await calculateAndSaveNewMotionDataTrapezoidalRule(newMotionData, Infinity);
     return;
   }
 
-  const currentExtendedMotionData = calculateAndSaveNewMotionDataTrapezoidalRule(newMotionData);
+  const currentExtendedMotionData = await calculateAndSaveNewMotionDataTrapezoidalRule(newMotionData);
 
   charts.forEach((chart) => updateChart(chart, currentExtendedMotionData));
 }
@@ -462,7 +462,7 @@ function calculateAndSaveNewMotionDataRungeKuttaMethod(newMotionData) {
 }
 
 // eslint-disable-next-line no-unused-vars
-function calculateAndSaveNewMotionDataTrapezoidalRule(newMotionData, maxSamples = MAX_SAMPLES) {
+async function calculateAndSaveNewMotionDataTrapezoidalRule(newMotionData, maxSamples = MAX_SAMPLES) {
   acceleration = newMotionData.z;
   const timeStep = newMotionData.interval / 1000; // from ms to s
 
@@ -493,7 +493,7 @@ function calculateAndSaveNewMotionDataTrapezoidalRule(newMotionData, maxSamples 
 
   const currentMotionData = { ...newMotionData, velocity, displacement, displacementDirection };
 
-  const extendedMotionDataWithFiltering = addSampleAndFiltering(currentMotionData, {
+  const extendedMotionDataWithFiltering = await addSampleAndFiltering(currentMotionData, {
     maxSamples,
     keyToFilters: ['z', 'rotationRateAlpha'],
     kalmanFilter: KALMAN_OPTIONS,
@@ -502,78 +502,5 @@ function calculateAndSaveNewMotionDataTrapezoidalRule(newMotionData, maxSamples 
 
   return extendedMotionDataWithFiltering;
 }
-
-/*
-// eslint-disable-next-line no-unused-vars
-function calculateAndSaveNewMotionDataTrapezoidalRule(newMotionData) {
-  const currentMotionData = { ...newMotionData };
-  const previousMotionData = getLastSample();
-
-  acceleration = currentMotionData.z;
-  const lastAcceleration2 = previousMotionData?.z ?? 0;
-  const lastVelocity = previousMotionData?.velocity ?? 0;
-  let velocity2 = lastVelocity;
-  // eslint-disable-next-line no-shadow
-  const lastDisplacement = previousMotionData?.displacement ?? 0;
-  let displacement2 = lastDisplacement;
-  const timeStep = currentMotionData.interval / 1000; // from ms to s
-
-  // Calculate the change in velocity using the trapezoidal rule
-  const deltaVelocity = ((acceleration + (acceleration - lastAcceleration2)) / 2) * timeStep;
-
-  // Update the velocity value
-  velocity2 += deltaVelocity;
-
-  // Calculate the change in displacement using the trapezoidal rule
-  const deltaDisplacement = ((velocity2 + (velocity2 - lastVelocity)) / 2) * timeStep;
-
-  // Update the displacement value and provide it in mm (instead of meters)
-  displacement2 += deltaDisplacement * 1000;
-
-  currentMotionData.velocity = velocity2;
-  currentMotionData.displacement = displacement2;
-
-  addSample(currentMotionData, MAX_SAMPLES);
-
-  return currentMotionData;
-}
-*/
-
-/* 
-// eslint-disable-next-line no-unused-vars
-function calculateAndSaveNewMotionDataRungeKuttaMethodResultantAcceleration(newMotionData) {
-  acceleration = Math.sign(newMotionData.z) * Math.sqrt(
-    newMotionData.x ** 2 +
-    newMotionData.y ** 2 +
-    newMotionData.z ** 2
-  );
-
-  // Check if the acceleration is above the threshold, else consider no change of velocity and displacement
-  if (Math.abs(acceleration) <= accelerationThreshold) {
-    const currentMotionData = { ...newMotionData, xyz: acceleration, velocity, displacement};
-    return currentMotionData;
-  }
-
-  const timeStep = newMotionData.interval / 1000; // from ms to s
-
-  
-  // Run the Runge-Kutta method to calculate the change in displacement
-  k1 = velocity * timeStep;
-  k2 = (velocity + k1 / 2) * timeStep; // 
-  k3 = (velocity + k2 / 2) * timeStep;
-  k4 = (velocity + k3) * timeStep;
-  const deltaDisplacement = ((k1 + 2 * k2 + 2 * k3 + k4) / 6) ; // * Math.sign(acceleration);
-
-  // Update the velocity value using the trapezoidal rule
-  const deltaVelocity = acceleration * timeStep; // if we were to use the zWithGravitation : ((acceleration + (acceleration - lastAcceleration)) / 2) * timeStep;
-  velocity += deltaVelocity;
-
-  // Update the displacement value and show it in mm (instead of meters)
-  displacement += deltaDisplacement * 1000; 
-
-   const currentMotionData = { ...newMotionData, velocity, displacement };
-
-  return currentMotionData;
-} */
 
 export default HomePage;
