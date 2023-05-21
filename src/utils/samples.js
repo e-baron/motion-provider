@@ -123,7 +123,7 @@ async function determineInOutState(newSample, keyToDetermineInOut) {
   const currentState = await sendWithState({ type: 'SAMPLE', currentRotationRate });
   const currentStateValue = STATE_VALUES[currentState.value];
   const inOutData = { inOut: currentStateValue, ...currentState.context };
-  console.log('inOutData:', inOutData);
+  // console.log('inOutData:', inOutData);
 
   // return currentStateValue;
   return inOutData;
