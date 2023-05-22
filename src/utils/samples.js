@@ -108,7 +108,7 @@ async function addSampleAndFiltering(
   const furtherExtendedSample = { ...extendedSample, ...inOutData };
 
   samples.push(furtherExtendedSample);
-  return extendedSample;
+  return furtherExtendedSample;
 }
 
 /**
@@ -119,15 +119,13 @@ async function addSampleAndFiltering(
  */
 async function determineInOutState(newSample, keyToDetermineInOut) {
   const currentRotationRate = newSample[keyToDetermineInOut];
-  // console.log('currentRotationRate : ', currentRotationRate);
-  // await sendWithState({ type: 'SAMPLE', currentRotationRate });
+  console.log('currentRotationRate : ', currentRotationRate);
+  // const currentState = await sendWithState({ type: 'SAMPLE', currentRotationRate });
   breathingService.send({ type: 'SAMPLE', currentRotationRate });
   const currentState = breathingService.getSnapshot();
   const currentStateValue = STATE_VALUES[currentState.value];
   const inOutData = { inOut: currentStateValue, ...currentState.context };
   // console.log('inOutData:', inOutData);
-
-  // return currentStateValue;
   return inOutData;
 }
 

@@ -135,6 +135,7 @@ const breathingMachine = createMachine(
           SAMPLE: {
             cond: 'isPotentialFirstPartPositiveMovementDetected',
             target: 'potentialPositiveMovement',
+            actions: ['incrementPositiveThreshold'],
           },
         },
       },
@@ -143,10 +144,7 @@ const breathingMachine = createMachine(
   {
     actions: {
       incrementPositiveThreshold: assign({
-        positiveThresholdCount: (context) => {
-          console.log('incrementPositiveThreshold : ', context.positiveThresholdCount + 1);
-          return context.positiveThresholdCount + 1;
-        },
+        positiveThresholdCount: (context) => context.positiveThresholdCount + 1,
       }),
       incrementNegativeThreshold: assign({
         negativeThresholdCount: (context) => context.negativeThresholdCount + 1,
@@ -158,17 +156,13 @@ const breathingMachine = createMachine(
         negativeThresholdCount: () => 0,
       }),
       setLastConfirmedMovementAsPositive: (context) => {
-        console.log('setLastConfirmedMovementAsPositive');
         context.lastConfirmedMovement = STATE_VALUES.positiveMovement;
       },
       setLastConfirmedMovementAsNegative: assign({
         lastConfirmedMovement: () => STATE_VALUES.negativeMovement,
       }),
       setCurrentMovementStateAsPositive: assign({
-        currentMovementState: () => {
-          console.log('setCurrentMovementStateAsPositive');
-          return STATE_VALUES.positiveMovement;
-        },
+        currentMovementState: () => STATE_VALUES.positiveMovement,
       }),
       setCurrentMovementStateAsPotentialPositiveMovement: assign({
         currentMovementState: () => STATE_VALUES.potentialPositiveMovement,
@@ -181,37 +175,18 @@ const breathingMachine = createMachine(
       }),
     },
     guards: {
-      isFullPostiveMovementDetected: (context, event) => {
-        console.log('isFullPostiveMovementDetected : ', context.positiveThresholdCount);
-        return (
-          event.currentRotationRate > NO_ROTATION_RATE &&
-          context.positiveThresholdCount === EXPECTED_SAMPLE_COUNT_ABOVE_POSITIVE_THRESHOLD - 1
-        );
-      },
+      isFullPostiveMovementDetected: (context, event) =>
+        event.currentRotationRate > NO_ROTATION_RATE &&
+        context.positiveThresholdCount === EXPECTED_SAMPLE_COUNT_ABOVE_POSITIVE_THRESHOLD - 1,
 
-      isPotentialFirstPartPositiveMovementDetected: (context, event) => {
-        console.log(
-          'isPotentialFirstPartPositiveMovementDetected : ',
-          context.positiveThresholdCount,
-        );
-        return (
-          event.currentRotationRate > ROTATION_RATE_POSITIVE_THRESHOLD &&
-          context.positiveThresholdCount === 0
-        );
-      },
+      isPotentialFirstPartPositiveMovementDetected: (context, event) =>
+        event.currentRotationRate > ROTATION_RATE_POSITIVE_THRESHOLD &&
+        context.positiveThresholdCount === 0,
 
-      isPotentialSecondPartPositiveMovementDetected: (context, event) => {
-        console.log(
-          'isPotentialSecondPartPositiveMovementDetected : ',
-          context.positiveThresholdCount,
-        );
-
-        return (
-          event.currentRotationRate > NO_ROTATION_RATE &&
-          context.positiveThresholdCount > 0 &&
-          context.positiveThresholdCount < EXPECTED_SAMPLE_COUNT_ABOVE_POSITIVE_THRESHOLD - 1
-        );
-      },
+      isPotentialSecondPartPositiveMovementDetected: (context, event) =>
+        event.currentRotationRate > NO_ROTATION_RATE &&
+        context.positiveThresholdCount > 0 &&
+        context.positiveThresholdCount < EXPECTED_SAMPLE_COUNT_ABOVE_POSITIVE_THRESHOLD - 1,
 
       isFullNegativeMovementDetected: (context, event) =>
         event.currentRotationRate < NO_ROTATION_RATE &&
