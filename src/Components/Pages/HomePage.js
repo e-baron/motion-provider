@@ -482,17 +482,23 @@ async function calculateAndSaveNewMotionDataTrapezoidalRule(
   return extendedMotionDataWithFiltering;
 }
 
+let previousConfirmedMovement;
+
 function playRightSoundForGivenSample(sampleData) {
-  console.log('sample :', sampleData);
-  if (sampleData.firstSampleOfLastConfirmedMovementState) {
-    if (sampleData.lastConfirmedMovement === STATE_VALUES.positiveMovement) {
+  // console.log('sample :', sampleData);
+  // if (sampleData.firstSampleOfLastConfirmedMovementState) {
+  if (sampleData.inOut !== previousConfirmedMovement) {
+    // if (sampleData.lastConfirmedMovement === STATE_VALUES.positiveMovement) {
+    if (sampleData.inOut === STATE_VALUES.positiveMovement) {
       stopOutSound();
       playInSound();
-    } else if (sampleData.lastConfirmedMovement === STATE_VALUES.negativeMovement) {
+    } else if (sampleData.inOut === STATE_VALUES.negativeMovement) {
+      // } else if (sampleData.lastConfirmedMovement === STATE_VALUES.negativeMovement) {
       stopInSound();
       playOutSound();
     }
   }
+  previousConfirmedMovement = sampleData.inOut;
 }
 
 function playInSound() {
