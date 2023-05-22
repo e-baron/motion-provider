@@ -485,15 +485,11 @@ async function calculateAndSaveNewMotionDataTrapezoidalRule(
 let previousConfirmedMovement;
 
 function playRightSoundForGivenSample(sampleData) {
-  // console.log('sample :', sampleData);
-  // if (sampleData.firstSampleOfLastConfirmedMovementState) {
   if (sampleData.inOut !== previousConfirmedMovement) {
-    // if (sampleData.lastConfirmedMovement === STATE_VALUES.positiveMovement) {
     if (sampleData.inOut === STATE_VALUES.positiveMovement) {
       stopOutSound();
       playInSound();
     } else if (sampleData.inOut === STATE_VALUES.negativeMovement) {
-      // } else if (sampleData.lastConfirmedMovement === STATE_VALUES.negativeMovement) {
       stopInSound();
       playOutSound();
     }

@@ -39,7 +39,6 @@ const breathingMachine = createMachine(
       positiveThresholdCount: 0,
       negativeThresholdCount: 0,
       lastConfirmedMovement: undefined, // has to be in another state than previousLastConfirmedMovement for the
-      firstSampleOfLastConfirmedMovementState: false,
       currentMovementState: STATE_VALUES.unknown,
       previousLastConfirmedMovement: 0,
     },
@@ -81,19 +80,12 @@ const breathingMachine = createMachine(
             {
               cond: 'isFullPostiveMovementDetected',
               target: 'positiveMovement',
-              actions: [
-                'incrementPositiveThreshold',
-
-                'setFirstSampleOfLastConfirmedMovementStateAsTrueIfOk',
-              ],
+              actions: ['incrementPositiveThreshold'],
             },
             {
               cond: 'isNoPositiveMovementDetected',
               target: 'potentialPositiveMovement',
-              actions: [
-                'clearPositiveThreshold',
-                'setFirstSampleOfLastConfirmedMovementStateAsFalse',
-              ],
+              actions: ['clearPositiveThreshold'],
             },
             {
               cond: 'isPotentialFirstPartPositiveMovementDetected',
@@ -120,7 +112,6 @@ const breathingMachine = createMachine(
             },
             {
               target: 'positiveMovement',
-              actions: ['setFirstSampleOfLastConfirmedMovementStateAsFalse'],
             },
           ],
         },
@@ -143,18 +134,12 @@ const breathingMachine = createMachine(
             {
               cond: 'isFullNegativeMovementDetected',
               target: 'negativeMovement',
-              actions: [
-                'incrementNegativeThreshold',
-                'setFirstSampleOfLastConfirmedMovementStateAsTrueIfOK',
-              ],
+              actions: ['incrementNegativeThreshold'],
             },
             {
               cond: 'isNoNegativeMovementDetected',
               target: 'potentialNegativeMovement',
-              actions: [
-                'clearNegativeThreshold',
-                'setFirstSampleOfLastConfirmedMovementStateAsFalse',
-              ],
+              actions: ['clearNegativeThreshold'],
             },
             {
               cond: 'isPotentialFirstPartNegativeMovementDetected',
@@ -178,10 +163,6 @@ const breathingMachine = createMachine(
               cond: 'isPotentialFirstPartPositiveMovementDetected',
               target: 'potentialPositiveMovement',
               actions: ['incrementPositiveThreshold'],
-            },
-            {
-              target: 'negativeMovement',
-              actions: ['setFirstSampleOfLastConfirmedMovementStateAsFalse'],
             },
           ],
         },
@@ -219,13 +200,6 @@ const breathingMachine = createMachine(
       }),
       setCurrentMovementStateAsPotentialNegativeMovement: assign({
         currentMovementState: () => STATE_VALUES.potentialNegativeMovement,
-      }),
-      setFirstSampleOfLastConfirmedMovementStateAsTrueIfOk: assign({
-        firstSampleOfLastConfirmedMovementState: (context) =>
-          context.lastConfirmedMovement !== context.previousLastConfirmedMovement,
-      }),
-      setFirstSampleOfLastConfirmedMovementStateAsFalse: assign({
-        firstSampleOfLastConfirmedMovementState: () => false,
       }),
       setPreviousLastConfirmedMovement: assign({
         previousLastConfirmedMovement: (context) => context.previousLastConfirmedMovement,
