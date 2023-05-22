@@ -3,6 +3,9 @@ import NoSleep from 'nosleep.js';
 import * as Utils from '../../utils/chart-utils';
 // import { io } from 'socket.io-client';
 import { MotionChart, clearChart, updateChart } from '../Chart/MotionChart';
+
+import inSound from '../../sounds/in.mp3';
+import outSound from '../../sounds/out.mp3';
 // eslint-disable-next-line no-unused-vars
 import {
   addSampleAndFiltering,
@@ -13,6 +16,7 @@ import {
   resetSamples,
   setKalmanFilter,
 } from '../../utils/samples';
+import { STATE_VALUES } from '../../utils/breathing-machine';
 
 const noSleep = new NoSleep();
 const MAX_SAMPLES = 1000;
@@ -260,6 +264,10 @@ function renderPageLayout() {
     <input class="form-control" type="file" id="filePicker">
   </div>
   <div id="printDataWrapper" class="alert alert-secondary mt-2 d-none"></div>  
+  <div id="soundWrapper">
+    <audio id="inAudio" src="${inSound}"></audio>
+    <audio id="outAudio" src="${outSound}"></audio>
+  </div>
   `;
   main.innerHTML = pageLayout;
 }
@@ -419,7 +427,11 @@ async function onMotionData(motionDataEvent, charts) {
   // const currentExtendedMotionData = calculateAndSaveNewMotionDataRungeKuttaMethod(newMotionData);
 
   if (!charts) {
-    await calculateAndSaveNewMotionDataTrapezoidalRule(newMotionData, Infinity);
+    const currentExtendedMotionData = await calculateAndSaveNewMotionDataTrapezoidalRule(
+      newMotionData,
+      Infinity,
+    );
+    playRightSoundForGivenSample(currentExtendedMotionData);
     return;
   }
 
@@ -427,7 +439,7 @@ async function onMotionData(motionDataEvent, charts) {
     newMotionData,
   );
 
-  console.log("prior to update chart :", currentExtendedMotionData);
+  console.log('prior to update chart :', currentExtendedMotionData);
 
   charts.forEach((chart) => updateChart(chart, currentExtendedMotionData));
 }
@@ -468,6 +480,41 @@ async function calculateAndSaveNewMotionDataTrapezoidalRule(
   });
 
   return extendedMotionDataWithFiltering;
+}
+
+function playRightSoundForGivenSample(sampleData) {
+  console.log('sample :', sampleData);
+  if (sampleData.firstSampleOfLastConfirmedMovementState) {
+    if (sampleData.lastConfirmedMovement === STATE_VALUES.positiveMovement) {
+      stopOutSound();
+      playInSound();
+    } else if (sampleData.lastConfirmedMovement === STATE_VALUES.negativeMovement) {
+      stopInSound();
+      playOutSound();
+    }
+  }
+}
+
+function playInSound() {
+  const inAudio = document.querySelector('#inAudio');
+  inAudio.play();
+}
+
+function stopInSound() {
+  const inAudio = document.querySelector('#inAudio');
+  inAudio.pause();
+  inAudio.currentTime = 0;
+}
+
+function playOutSound() {
+  const outAudio = document.querySelector('#outAudio');
+  outAudio.play();
+}
+
+function stopOutSound() {
+  const outAudio = document.querySelector('#outAudio');
+  outAudio.pause();
+  outAudio.currentTime = 0;
 }
 
 export default HomePage;

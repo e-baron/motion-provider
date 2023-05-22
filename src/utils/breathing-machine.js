@@ -13,8 +13,8 @@ inspect({
 
 const EXPECTED_SAMPLE_COUNT_ABOVE_POSITIVE_THRESHOLD = 10;
 const EXPECTED_SAMPLE_COUNT_ABOVE_NEGATIVE_THRESHOLD = 10;
-const ROTATION_RATE_POSITIVE_THRESHOLD = 0.5;
-const ROTATION_RATE_NEGATIVE_THRESHOLD = -0.5;
+const ROTATION_RATE_POSITIVE_THRESHOLD = 1; // 0.5;
+const ROTATION_RATE_NEGATIVE_THRESHOLD = -1; // -0.5;
 const NO_ROTATION_RATE = 0;
 
 const STATE_VALUES = {
@@ -32,31 +32,38 @@ const STATE_VALUES = {
 
 const breathingMachine = createMachine(
   {
-    /** @xstate-layout N4IgpgJg5mDOIC5QCMBOYCGAXAFgSwDsoA6AVwIGsCB7AdwIGIBlAQQFkAFAGQFEBtAAwBdRKAAO1WHix5qBUSAAeiAIwqA7CuIA2ABwCALAE5t2gEwqjK7QFYANCACeiALQWjxfQGZ1No+oCzAwEBbQBfMIc0TFxCEnIqOkZWTl4+FREkEAkpGTkFZQQVLy8zYiMvG3UzARVgr11TB2cEFw0y9QEjEPabKoEAiKj0bHwiYhzpPAA3MDZqWYBbMAIsZnZufmEFSbz5LMKVM2PiGy8DPQGbWt0zXWbESq0VXQNz6xVr8+11IZBo0ZxCbULArGQYAA2ADkwFBsDM5gswMtVutUltMuJJFN8gdVNoXp4zNonnpSj57k5EGYbMRLCTagJbrdfAYzH8AbFxhJQas8JCYXCZLN5kswWjNulMdlsXsCqp1MZiDVigZFdZXiYHkU7sR1D8fpYvAJiZYOSMuSQeWD+dDYfCRUiUWsUpKzNLdrJ9qBDuojLTGvo6kzSdqLB0BtoKjT9QZdF5zTExiQCPbhYixajXWltllPbifaoXlpLsZTO5rPYqUUDFpdNcTBZXiVbgZE4DuSCbZCOLKEaLkeLsxidn2C0pEPrad1OsFPmomVWWrT6caVEy7mZWezIv8LcngbzwRDe7l+06hxs0hlR2fx4UKgJlVGTRUDA2zF5tevdKcND9jDjLxLhUdtLUPbsTz7R1MxdK9+HdW8cW9CcEH8AwdAMYJjlrc4rHUb99D1SNoyqbQgJ3XcaAgOAFE5ZMkLlPEEE0dRygGQxahsBd621FwsO0HQBi8KxbFZPwwIPBIaHoRivXlIo6gwmxbCsUpdHreM+MqDx13UETK3EoxJKBT0YMHVY5PvRBHzpboNN0RVa0sSkWlKMo3jeT94zZIJQN3ejTK7PkBTTc9YKslDDmuDCQkabiVO0AQvEsPijA8F9bAuU01TZEzxlTIVwosrBIoU6wjF-TR-SqEovO1dziE88kfJw-zhiTIKj1tU8pnM50yuYqwMLjAJfCMO4JvONKMpnC5biZfSzgiCIgA */
+    /** @xstate-layout N4IgpgJg5mDOIC5QCMBOYCGAXAFgSwDsoA6AVwIGsCB7AdwIGIBlAQQFkAFAGQFEBtAAwBdRKAAO1WHix5qBUSAAeiAJwB2AGzEAzLoBMAVgAshvQEYNGlQBoQAT0QBaABzPiZgc70ajzlRoE9V20AXxDbNExcQhJyKjpGVk5ePjMRJBAJKRk5BWUEMzM1NWIDVyNi4oENbTVbBwRtM2IVZx8VJoMDHwEjDTCI9Gx8ImIJLDACGQwAGw5JaTwANzA2ahWAW0msZnZufmEFLMXcjPzfEq71dTVnM20y5yN6xG0BbWI9QzM9FV+1Wp6aoDECRYYxMbUCZTPCzebZZardZgLZTXbJfhpI4LHLyM6IC6lAxqMwqMlvIxGAw2ewElQGUp9KlqapdIwqIwgsHRUbjbawuY4xFrTbbdH7Ph6dLiIWnUD5AwWYjONRfDpeSk+AwvBA+ZoaAzaIIkszGVz9cKgoY8kjHGQrEUosVJCWHDJ22R4+WIDz3ZVqdnvAJdA0aHXGEr+N4s5wGX4GQJc60jW1Ch3I1E7F0pLHu2VepQ+wHENQqU01XoebSWHUkrRmPwBDrqMpxpNRFOQ6HTGYAOTAUGwwozzr2KTdMoRcsLCCBt2IFTLAg6918zh1pmVZdL1J62hVBnb4N5UP5s37g-tSNFaOzmOlmXzeUQQKMAmVxg8CYqZh1RiVfRNJYdxmBUTRHjaXZnn2A5DumN5ZmO-BStiU4Fvk5gCO+gG+D+RpPHUtIIK2C7vA2dz7rG9IQZ2BCwVejqZuK44Ph6075KaAgMroRrGKYFhWH+XSMlqLIGsY9KhJa3K0fRw4Icx96oSc6E+iyHyAk07Kie84YqO+sYaHomjVCYbYgjQEBwAoMkxMpuLPggRjaCoRIkmSHS9FSNINI4RQMgEXg+I2gTBDREJxDQ9D2Z6jkWB0LRqN0qr6a4-w6o4RrED4Bqkh59xPNonLScmEJ8jCcJpteTpTDF7GqK47hvoaDzUkUtQ6kUJRYRUvjVO8tRqOFJ4IvBNVYHVqkIGSWiFTltTOSyv5EbcHw-K0DYksYDx6MNqbdgKF5wdVmaTXFu46EEAhJW0vzshuujED1TyBF01T7ntxB0Ze8njWd+IFJo3Gqlp-jMrpK3OGtvx3CqprOeZYRAA */
     id: 'breathing',
     initial: 'unknown',
     context: {
       positiveThresholdCount: 0,
       negativeThresholdCount: 0,
-      lastConfirmedMovement: STATE_VALUES.unknown,
+      lastConfirmedMovement: undefined, // has to be in another state than previousLastConfirmedMovement for the
+      firstSampleOfLastConfirmedMovementState: false,
       currentMovementState: STATE_VALUES.unknown,
+      firstSampleOfCurrentMovementState: true,
+      previousLastConfirmedMovement: 0,
     },
     predictableActionArguments: true,
     states: {
       unknown: {
         value: STATE_VALUES.unknown,
-        entry: ['clearNegativeThreshold', 'clearPositiveThreshold'],
+        entry: [
+          'clearNegativeThreshold',
+          'clearPositiveThreshold',
+          'setfirstSampleOfCurrentMovementStateAsTrue',
+        ],
         on: {
           SAMPLE: [
             {
               cond: 'isPotentialFirstPartPositiveMovementDetected',
               target: 'potentialPositiveMovement',
-              actions: ['incrementPositiveThreshold'],
+              actions: ['incrementPositiveThreshold', 'setfirstSampleOfCurrentMovementStateAsTrue'],
             },
             {
               cond: 'isPotentialFirstPartNegativeMovementDetected',
               target: 'potentialNegativeMovement',
-              actions: ['incrementNegativeThreshold'],
+              actions: ['incrementNegativeThreshold', 'setfirstSampleOfCurrentMovementStateAsTrue'],
             },
           ],
         },
@@ -69,16 +76,40 @@ const breathingMachine = createMachine(
             {
               cond: 'isPotentialFirstPartNegativeMovementDetected',
               target: 'potentialNegativeMovement',
-              actions: ['clearPositiveThreshold', 'incrementNegativeThreshold'],
+              actions: [
+                'clearPositiveThreshold',
+                'incrementNegativeThreshold',
+                'setfirstSampleOfCurrentMovementStateAsTrue',
+              ],
             },
             {
               cond: 'isPotentialSecondPartPositiveMovementDetected',
               target: 'potentialPositiveMovement',
-              actions: ['incrementPositiveThreshold'],
+              actions: [
+                'incrementPositiveThreshold',
+                'setfirstSampleOfCurrentMovementStateAsFalse',
+              ],
             },
             {
               cond: 'isFullPostiveMovementDetected',
               target: 'positiveMovement',
+              actions: [
+                'incrementPositiveThreshold',
+                'setfirstSampleOfCurrentMovementStateAsTrue',
+                'setFirstSampleOfLastConfirmedMovementStateAsTrue',
+              ],
+            },
+            {
+              cond: 'isNoPositiveMovementDetected',
+              target: 'potentialPositiveMovement',
+              actions: [
+                'clearPositiveThreshold',
+                'setFirstSampleOfLastConfirmedMovementStateAsFalse',
+              ],
+            },
+            {
+              cond: 'isPotentialFirstPartPositiveMovementDetected',
+              target: 'potentialPositiveMovement',
               actions: ['incrementPositiveThreshold'],
             },
           ],
@@ -88,6 +119,7 @@ const breathingMachine = createMachine(
         value: STATE_VALUES.positiveMovement,
         entry: [
           'clearPositiveThreshold',
+          'setPreviousLastConfirmedMovement',
           'setLastConfirmedMovementAsPositive',
           'setCurrentMovementStateAsPositive',
         ],
@@ -96,7 +128,14 @@ const breathingMachine = createMachine(
             {
               cond: 'isPotentialFirstPartNegativeMovementDetected',
               target: 'potentialNegativeMovement',
-              actions: ['incrementNegativeThreshold'],
+              actions: ['incrementNegativeThreshold', 'setfirstSampleOfCurrentMovementStateAsTrue'],
+            },
+            {
+              target: 'positiveMovement',
+              actions: [
+                'setfirstSampleOfCurrentMovementStateAsFalse',
+                'setFirstSampleOfLastConfirmedMovementStateAsFalse',
+              ],
             },
           ],
         },
@@ -109,16 +148,40 @@ const breathingMachine = createMachine(
             {
               cond: 'isPotentialFirstPartPositiveMovementDetected',
               target: 'potentialPositiveMovement',
-              actions: ['clearNegativeThreshold', 'incrementPositiveThreshold'],
+              actions: [
+                'clearNegativeThreshold',
+                'incrementPositiveThreshold',
+                'setfirstSampleOfCurrentMovementStateAsTrue',
+              ],
             },
             {
               cond: 'isPotentialSecondPartNegativeMovementDetected',
               target: 'potentialNegativeMovement',
-              actions: ['incrementNegativeThreshold'],
+              actions: [
+                'incrementNegativeThreshold',
+                'setfirstSampleOfCurrentMovementStateAsFalse',
+              ],
             },
             {
               cond: 'isFullNegativeMovementDetected',
               target: 'negativeMovement',
+              actions: [
+                'incrementNegativeThreshold',
+                'setfirstSampleOfCurrentMovementStateAsTrue',
+                'setFirstSampleOfLastConfirmedMovementStateAsTrue',
+              ],
+            },
+            {
+              cond: 'isNoNegativeMovementDetected',
+              target: 'potentialNegativeMovement',
+              actions: [
+                'clearNegativeThreshold',
+                'setFirstSampleOfLastConfirmedMovementStateAsFalse',
+              ],
+            },
+            {
+              cond: 'isPotentialFirstPartNegativeMovementDetected',
+              target: 'potentialNegativeMovement',
               actions: ['incrementNegativeThreshold'],
             },
           ],
@@ -128,15 +191,25 @@ const breathingMachine = createMachine(
         value: STATE_VALUES.negativeMovement,
         entry: [
           'clearNegativeThreshold',
+          'setPreviousLastConfirmedMovement',
           'setLastConfirmedMovementAsNegative',
           'setCurrentMovementStateAsNegative',
         ],
         on: {
-          SAMPLE: {
-            cond: 'isPotentialFirstPartPositiveMovementDetected',
-            target: 'potentialPositiveMovement',
-            actions: ['incrementPositiveThreshold'],
-          },
+          SAMPLE: [
+            {
+              cond: 'isPotentialFirstPartPositiveMovementDetected',
+              target: 'potentialPositiveMovement',
+              actions: ['incrementPositiveThreshold', 'setfirstSampleOfCurrentMovementStateAsTrue'],
+            },
+            {
+              target: 'negativeMovement',
+              actions: [
+                'setfirstSampleOfCurrentMovementStateAsFalse',
+                'setFirstSampleOfLastConfirmedMovementStateAsFalse',
+              ],
+            },
+          ],
         },
       },
     },
@@ -173,6 +246,24 @@ const breathingMachine = createMachine(
       setCurrentMovementStateAsPotentialNegativeMovement: assign({
         currentMovementState: () => STATE_VALUES.potentialNegativeMovement,
       }),
+      setfirstSampleOfCurrentMovementStateAsTrue: (context) => {
+        context.firstSampleOfCurrentMovementState = true;
+      },
+      setfirstSampleOfCurrentMovementStateAsFalse: (context) => {
+        context.firstSampleOfCurrentMovementState = false;
+      },
+      setFirstSampleOfLastConfirmedMovementStateAsTrue: assign({
+        firstSampleOfLastConfirmedMovementState: (context) =>
+          // (context.lastConfirmedMovement === STATE_VALUES.negativeMovement ||
+          // context.lastConfirmedMovement === STATE_VALUES.positiveMovement) &&
+          context.lastConfirmedMovement !== context.previousLastConfirmedMovement,
+      }),
+      setFirstSampleOfLastConfirmedMovementStateAsFalse: assign({
+        firstSampleOfLastConfirmedMovementState: () => false,
+      }),
+      setPreviousLastConfirmedMovement: assign({
+        previousLastConfirmedMovement: (context) => context.previousLastConfirmedMovement,
+      }),
     },
     guards: {
       isFullPostiveMovementDetected: (context, event) =>
@@ -188,6 +279,9 @@ const breathingMachine = createMachine(
         context.positiveThresholdCount > 0 &&
         context.positiveThresholdCount < EXPECTED_SAMPLE_COUNT_ABOVE_POSITIVE_THRESHOLD - 1,
 
+      isNoPositiveMovementDetected: (context, event) =>
+        event.currentRotationRate <= NO_ROTATION_RATE,
+
       isFullNegativeMovementDetected: (context, event) =>
         event.currentRotationRate < NO_ROTATION_RATE &&
         context.negativeThresholdCount === EXPECTED_SAMPLE_COUNT_ABOVE_NEGATIVE_THRESHOLD - 1,
@@ -200,6 +294,9 @@ const breathingMachine = createMachine(
         event.currentRotationRate < NO_ROTATION_RATE &&
         context.negativeThresholdCount > 0 &&
         context.negativeThresholdCount < EXPECTED_SAMPLE_COUNT_ABOVE_NEGATIVE_THRESHOLD - 1,
+
+      isNoNegativeMovementDetected: (context, event) =>
+        event.currentRotationRate >= NO_ROTATION_RATE,
     },
   },
 );
