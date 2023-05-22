@@ -17,33 +17,6 @@ const ROTATION_RATE_POSITIVE_THRESHOLD = 0.5;
 const ROTATION_RATE_NEGATIVE_THRESHOLD = -0.5;
 const NO_ROTATION_RATE = 0;
 
-/*
-const isFullPostiveMovementDetected = (context, event) =>
-  event.currentRotationRate > NO_ROTATION_RATE &&
-  context.positiveThresholdCount === EXPECTED_SAMPLE_COUNT_ABOVE_POSITIVE_THRESHOLD;
-
-const isPotentialFirstPartPositiveMovementDetected = (context, event) =>
-  event.currentRotationRate > ROTATION_RATE_POSITIVE_THRESHOLD &&
-  context.positiveThresholdCount === 0;
-
-const isPotentialSecondPartPositiveMovementDetected = (context, event) =>
-  event.currentRotationRate > NO_ROTATION_RATE &&
-  context.positiveThresholdCount > 0 &&
-  context.positiveThresholdCount < EXPECTED_SAMPLE_COUNT_ABOVE_POSITIVE_THRESHOLD;
-
-const isFullNegativeMovementDetected = (context, event) =>
-  event.currentRotationRate < NO_ROTATION_RATE &&
-  context.negativeThresholdCount === EXPECTED_SAMPLE_COUNT_ABOVE_NEGATIVE_THRESHOLD;
-
-const isPotentialFirstPartNegativeMovementDetected = (context, event) =>
-  event.currentRotationRate < ROTATION_RATE_NEGATIVE_THRESHOLD &&
-  context.negativeThresholdCount === 0;
-
-const isPotentialSecondPartNegativeMovementDetected = (context, event) =>
-  event.currentRotationRate < NO_ROTATION_RATE &&
-  context.negativeThresholdCount > 0 &&
-  context.negativeThresholdCount < EXPECTED_SAMPLE_COUNT_ABOVE_NEGATIVE_THRESHOLD; */
-
 const STATE_VALUES = {
   unknown: 0,
   potentialPositiveMovement: 1,
@@ -51,6 +24,11 @@ const STATE_VALUES = {
   potentialNegativeMovement: -1,
   negativeMovement: -2,
 };
+
+/**
+ * Note that the current state returned by the send method is not the latest. Therefore the state has been added to the
+ * context...
+ */
 
 const breathingMachine = createMachine(
   {
@@ -60,6 +38,8 @@ const breathingMachine = createMachine(
     context: {
       positiveThresholdCount: 0,
       negativeThresholdCount: 0,
+      lastConfirmedMovement: STATE_VALUES.unknown,
+      currentMovementState: STATE_VALUES.unknown,
     },
     predictableActionArguments: true,
     states: {
@@ -71,50 +51,86 @@ const breathingMachine = createMachine(
             {
               cond: 'isPotentialFirstPartPositiveMovementDetected',
               target: 'potentialPositiveMovement',
+              actions: ['incrementPositiveThreshold'],
             },
             {
               cond: 'isPotentialFirstPartNegativeMovementDetected',
               target: 'potentialNegativeMovement',
+              actions: ['incrementNegativeThreshold'],
+            },
+          ],
+        },
+      },
+      potentialPositiveMovement: {
+        value: STATE_VALUES.potentialPositiveMovement,
+        entry: ['setCurrentMovementStateAsPotentialPositiveMovement'],
+        on: {
+          SAMPLE: [
+            {
+              cond: 'isPotentialFirstPartNegativeMovementDetected',
+              target: 'potentialNegativeMovement',
+              actions: ['clearPositiveThreshold', 'incrementNegativeThreshold'],
+            },
+            {
+              cond: 'isPotentialSecondPartPositiveMovementDetected',
+              target: 'potentialPositiveMovement',
+              actions: ['incrementPositiveThreshold'],
+            },
+            {
+              cond: 'isFullPostiveMovementDetected',
+              target: 'positiveMovement',
+              actions: ['incrementPositiveThreshold'],
             },
           ],
         },
       },
       positiveMovement: {
         value: STATE_VALUES.positiveMovement,
-        entry: ['clearPositiveThreshold'],
+        entry: [
+          'clearPositiveThreshold',
+          'setLastConfirmedMovementAsPositive',
+          'setCurrentMovementStateAsPositive',
+        ],
         on: {
           SAMPLE: [
             {
               cond: 'isPotentialFirstPartNegativeMovementDetected',
               target: 'potentialNegativeMovement',
+              actions: ['incrementNegativeThreshold'],
             },
           ],
         },
       },
       potentialNegativeMovement: {
         value: STATE_VALUES.potentialNegativeMovement,
-        entry: ['incrementNegativeThreshold'],
+        entry: ['setCurrentMovementStateAsPotentialNegativeMovement'],
         on: {
           SAMPLE: [
             {
               cond: 'isPotentialFirstPartPositiveMovementDetected',
               target: 'potentialPositiveMovement',
-              actions: ['clearNegativeThreshold'],
+              actions: ['clearNegativeThreshold', 'incrementPositiveThreshold'],
             },
             {
               cond: 'isPotentialSecondPartNegativeMovementDetected',
               target: 'potentialNegativeMovement',
+              actions: ['incrementNegativeThreshold'],
             },
             {
               cond: 'isFullNegativeMovementDetected',
               target: 'negativeMovement',
+              actions: ['incrementNegativeThreshold'],
             },
           ],
         },
       },
       negativeMovement: {
         value: STATE_VALUES.negativeMovement,
-        entry: ['clearNegativeThreshold'],
+        entry: [
+          'clearNegativeThreshold',
+          'setLastConfirmedMovementAsNegative',
+          'setCurrentMovementStateAsNegative',
+        ],
         on: {
           SAMPLE: {
             cond: 'isPotentialFirstPartPositiveMovementDetected',
@@ -122,33 +138,15 @@ const breathingMachine = createMachine(
           },
         },
       },
-      potentialPositiveMovement: {
-        value: STATE_VALUES.potentialPositiveMovement,
-        entry: ['incrementPositiveThreshold'],
-        on: {
-          SAMPLE: [
-            {
-              cond: 'isPotentialFirstPartNegativeMovementDetected',
-              target: 'potentialNegativeMovement',
-              actions: ['clearPositiveThreshold'],
-            },
-            {
-              cond: 'isPotentialSecondPartPositiveMovementDetected',
-              target: 'potentialPositiveMovement',
-            },
-            {
-              cond: 'isFullPostiveMovementDetected',
-              target: 'positiveMovement',
-            },
-          ],
-        },
-      },
     },
   },
   {
     actions: {
       incrementPositiveThreshold: assign({
-        positiveThresholdCount: (context) => context.positiveThresholdCount + 1,
+        positiveThresholdCount: (context) => {
+          console.log('incrementPositiveThreshold : ', context.positiveThresholdCount + 1);
+          return context.positiveThresholdCount + 1;
+        },
       }),
       incrementNegativeThreshold: assign({
         negativeThresholdCount: (context) => context.negativeThresholdCount + 1,
@@ -159,24 +157,65 @@ const breathingMachine = createMachine(
       clearNegativeThreshold: assign({
         negativeThresholdCount: () => 0,
       }),
+      setLastConfirmedMovementAsPositive: (context) => {
+        console.log('setLastConfirmedMovementAsPositive');
+        context.lastConfirmedMovement = STATE_VALUES.positiveMovement;
+      },
+      setLastConfirmedMovementAsNegative: assign({
+        lastConfirmedMovement: () => STATE_VALUES.negativeMovement,
+      }),
+      setCurrentMovementStateAsPositive: assign({
+        currentMovementState: () => {
+          console.log('setCurrentMovementStateAsPositive');
+          return STATE_VALUES.positiveMovement;
+        },
+      }),
+      setCurrentMovementStateAsPotentialPositiveMovement: assign({
+        currentMovementState: () => STATE_VALUES.potentialPositiveMovement,
+      }),
+      setCurrentMovementStateAsNegative: assign({
+        currentMovementState: () => STATE_VALUES.negativeMovement,
+      }),
+      setCurrentMovementStateAsPotentialNegativeMovement: assign({
+        currentMovementState: () => STATE_VALUES.potentialNegativeMovement,
+      }),
     },
     guards: {
-      isFullPostiveMovementDetected: (context, event) =>
-        event.currentRotationRate > NO_ROTATION_RATE &&
-        context.positiveThresholdCount === EXPECTED_SAMPLE_COUNT_ABOVE_POSITIVE_THRESHOLD,
+      isFullPostiveMovementDetected: (context, event) => {
+        console.log('isFullPostiveMovementDetected : ', context.positiveThresholdCount);
+        return (
+          event.currentRotationRate > NO_ROTATION_RATE &&
+          context.positiveThresholdCount === EXPECTED_SAMPLE_COUNT_ABOVE_POSITIVE_THRESHOLD - 1
+        );
+      },
 
-      isPotentialFirstPartPositiveMovementDetected: (context, event) =>
-        event.currentRotationRate > ROTATION_RATE_POSITIVE_THRESHOLD &&
-        context.positiveThresholdCount === 0,
+      isPotentialFirstPartPositiveMovementDetected: (context, event) => {
+        console.log(
+          'isPotentialFirstPartPositiveMovementDetected : ',
+          context.positiveThresholdCount,
+        );
+        return (
+          event.currentRotationRate > ROTATION_RATE_POSITIVE_THRESHOLD &&
+          context.positiveThresholdCount === 0
+        );
+      },
 
-      isPotentialSecondPartPositiveMovementDetected: (context, event) =>
-        event.currentRotationRate > NO_ROTATION_RATE &&
-        context.positiveThresholdCount > 0 &&
-        context.positiveThresholdCount < EXPECTED_SAMPLE_COUNT_ABOVE_POSITIVE_THRESHOLD,
+      isPotentialSecondPartPositiveMovementDetected: (context, event) => {
+        console.log(
+          'isPotentialSecondPartPositiveMovementDetected : ',
+          context.positiveThresholdCount,
+        );
+
+        return (
+          event.currentRotationRate > NO_ROTATION_RATE &&
+          context.positiveThresholdCount > 0 &&
+          context.positiveThresholdCount < EXPECTED_SAMPLE_COUNT_ABOVE_POSITIVE_THRESHOLD - 1
+        );
+      },
 
       isFullNegativeMovementDetected: (context, event) =>
         event.currentRotationRate < NO_ROTATION_RATE &&
-        context.negativeThresholdCount === EXPECTED_SAMPLE_COUNT_ABOVE_NEGATIVE_THRESHOLD,
+        context.negativeThresholdCount === EXPECTED_SAMPLE_COUNT_ABOVE_NEGATIVE_THRESHOLD - 1,
 
       isPotentialFirstPartNegativeMovementDetected: (context, event) =>
         event.currentRotationRate < ROTATION_RATE_NEGATIVE_THRESHOLD &&
@@ -185,7 +224,7 @@ const breathingMachine = createMachine(
       isPotentialSecondPartNegativeMovementDetected: (context, event) =>
         event.currentRotationRate < NO_ROTATION_RATE &&
         context.negativeThresholdCount > 0 &&
-        context.negativeThresholdCount < EXPECTED_SAMPLE_COUNT_ABOVE_NEGATIVE_THRESHOLD,
+        context.negativeThresholdCount < EXPECTED_SAMPLE_COUNT_ABOVE_NEGATIVE_THRESHOLD - 1,
     },
   },
 );

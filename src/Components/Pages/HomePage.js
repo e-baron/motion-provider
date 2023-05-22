@@ -39,7 +39,7 @@ let controller;
 // eslint-disable-next-line no-unused-vars
 const TIME_TO_WAIT_PRIOR_TO_SAMPLING = 1000; // in ms;
 
-const KALMAN_OPTIONS = { R: 0.01, Q: 0.5, A : 1.2 };
+const KALMAN_OPTIONS = { R: 0.01, Q: 0.5, A: 1.2 };
 
 const HomePage = () => {
   renderPageLayout();
@@ -152,7 +152,7 @@ const HomePage = () => {
   };
 
   const inOutChartOptions = {
-    label: 'In or out',
+    label: 'In or out (and potentially in or out)',
     type: 'line',
     xMax: 1000,
     xTitle: 'Samples',
@@ -165,8 +165,23 @@ const HomePage = () => {
     wrapperSelector: 'inOutChartWrapper',
   };
 
+  const inOutSummaryChartOptions = {
+    label: 'In or out only',
+    type: 'line',
+    xMax: 1000,
+    xTitle: 'Samples',
+    lineColor: Utils.CHART_COLORS.blue,
+    height: 500,
+    width: 500,
+    yMin: undefined,
+    yMax: undefined,
+    yAxisKey: 'lastConfirmedMovement',
+    wrapperSelector: 'inOutSummaryChartWrapper',
+  };
+
   const chartsOptions = [
     inOutChartOptions,
+    inOutSummaryChartOptions,
     alphaRotationRateChartOptions,
     alphaRotationRateFilteredChartOptions,
     accelerationChartOptions,
@@ -179,6 +194,8 @@ const HomePage = () => {
   renderChartWrappers(chartsOptions);
 
   const inOutChart = MotionChart(inOutChartOptions);
+
+  const inOutSummaryChart = MotionChart(inOutSummaryChartOptions);
 
   const accelerationChart = MotionChart(accelerationChartOptions);
 
@@ -196,6 +213,7 @@ const HomePage = () => {
 
   const charts = [
     inOutChart,
+    inOutSummaryChart,
     accelerationChart,
     accelerationFilteredChart,
     displacementChart,
@@ -406,7 +424,9 @@ async function onMotionData(motionDataEvent, charts) {
     return;
   }
 
-  const currentExtendedMotionData = await calculateAndSaveNewMotionDataTrapezoidalRule(newMotionData);
+  const currentExtendedMotionData = await calculateAndSaveNewMotionDataTrapezoidalRule(
+    newMotionData,
+  );
 
   charts.forEach((chart) => updateChart(chart, currentExtendedMotionData));
 }
@@ -462,7 +482,10 @@ function calculateAndSaveNewMotionDataRungeKuttaMethod(newMotionData) {
 }
 
 // eslint-disable-next-line no-unused-vars
-async function calculateAndSaveNewMotionDataTrapezoidalRule(newMotionData, maxSamples = MAX_SAMPLES) {
+async function calculateAndSaveNewMotionDataTrapezoidalRule(
+  newMotionData,
+  maxSamples = MAX_SAMPLES,
+) {
   acceleration = newMotionData.z;
   const timeStep = newMotionData.interval / 1000; // from ms to s
 

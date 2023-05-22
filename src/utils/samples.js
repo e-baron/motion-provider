@@ -119,8 +119,10 @@ async function addSampleAndFiltering(
  */
 async function determineInOutState(newSample, keyToDetermineInOut) {
   const currentRotationRate = newSample[keyToDetermineInOut];
-
-  const currentState = await sendWithState({ type: 'SAMPLE', currentRotationRate });
+  // console.log('currentRotationRate : ', currentRotationRate);
+  // await sendWithState({ type: 'SAMPLE', currentRotationRate });
+  breathingService.send({ type: 'SAMPLE', currentRotationRate });
+  const currentState = breathingService.getSnapshot();
   const currentStateValue = STATE_VALUES[currentState.value];
   const inOutData = { inOut: currentStateValue, ...currentState.context };
   // console.log('inOutData:', inOutData);
@@ -129,6 +131,7 @@ async function determineInOutState(newSample, keyToDetermineInOut) {
   return inOutData;
 }
 
+// eslint-disable-next-line no-unused-vars
 function sendWithState(event) {
   return new Promise((resolve) => {
     breathingService.onTransition((state) => {
